@@ -205,6 +205,7 @@ public class X509CertInfo {
      * @param other the object being compared with this one
      * @return true iff the certificates are equivalent
      */
+    @Pure
     public boolean equals(X509CertInfo other) {
         if (this == other) {
             return true;

@@ -30,8 +30,8 @@
 package sun.net.www;
 
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.*;
 import java.util.Collections;

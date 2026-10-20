@@ -290,6 +290,7 @@ public class Type implements Comparable<Type> {
     }
 
     @Override
+    @Pure
     public int compareTo(Type that) {
         return Long.compare(this.id, that.id);
     }

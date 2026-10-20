@@ -82,6 +82,7 @@ public non-sealed class FormatFlagsConversionMismatchException
         return c;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return "Conversion = " + c + ", Flags = " + f;
     }

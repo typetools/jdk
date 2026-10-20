@@ -365,6 +365,7 @@ public class CompositeType extends OpenType<CompositeData> {
      *
      * @return  <code>true</code> if the specified object is equal to this <code>CompositeType</code> instance.
      */
+    @Pure
     public boolean equals(@Nullable Object obj) {
 
         // if obj is null, return false

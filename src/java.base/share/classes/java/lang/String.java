@@ -57,9 +57,9 @@ import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.common.value.qual.StringVal;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
@@ -2622,6 +2622,7 @@ public final class String
      * @since   21
      */
     @Pure
+    @StaticallyExecutable
     public int indexOf(int ch, int beginIndex, int endIndex) {
         checkBoundsBeginEnd(beginIndex, endIndex, length());
         return isLatin1() ? StringLatin1.indexOf(value, ch, beginIndex, endIndex)
@@ -2787,6 +2788,7 @@ public final class String
      * @since   21
      */
     @Pure
+    @StaticallyExecutable
     public int indexOf(String str, int beginIndex, int endIndex) {
         if (str.length() == 1) {
             /* Simple optimization, can be omitted without behavioral impact */

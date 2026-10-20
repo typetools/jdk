@@ -27,9 +27,10 @@ package java.nio.charset;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import jdk.internal.misc.ThreadTracker;
 import jdk.internal.misc.VM;
@@ -948,6 +949,7 @@ public abstract class Charset
      * @return A negative integer, zero, or a positive integer as this charset
      *         is less than, equal to, or greater than the specified charset
      */
+    @Pure
     public final int compareTo(Charset that) {
         return (name().compareToIgnoreCase(that.name()));
     }
@@ -970,7 +972,8 @@ public abstract class Charset
      * @return  {@code true} if, and only if, this charset is equal to the
      *          given object
      */
-    public final boolean equals(Object ob) {
+    @Pure
+    public final boolean equals(@Nullable Object ob) {
         if (!(ob instanceof Charset))
             return false;
         if (this == ob)

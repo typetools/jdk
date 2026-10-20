@@ -25,11 +25,13 @@
 
 package java.awt.datatransfer;
 
+import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.ByteArrayInputStream;
 import java.io.CharArrayReader;
@@ -49,9 +51,6 @@ import java.nio.CharBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
-
-import org.checkerframework.checker.interning.qual.Interned;
-import org.checkerframework.framework.qual.AnnotatedFor;
 
 import sun.datatransfer.DataFlavorUtil;
 import sun.reflect.misc.ReflectUtil;
@@ -948,6 +947,7 @@ public class DataFlavor implements Externalizable, Cloneable {
      *         {@code DataFlavor}; {@code false} otherwise
      * @see #selectBestTextFlavor
      */
+    @Pure
     public boolean equals(DataFlavor that) {
         if (that == null) {
             return false;
@@ -1008,6 +1008,7 @@ public class DataFlavor implements Externalizable, Cloneable {
      *             {@link #isMimeTypeEqual(String)} instead.
      */
     @Deprecated
+    @Pure
     public boolean equals(String s) {
         if (s == null || mimeType == null)
             return false;

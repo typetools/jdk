@@ -29,6 +29,7 @@ package java.lang;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.TerminatesExecution;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
@@ -1362,6 +1363,7 @@ public @UsesObjectEquals class Runtime {
          *          If the given object is {@code null}
          */
         @Override
+        @Pure
         public int compareTo(Version obj) {
             return compare(obj, false);
         }
@@ -1391,6 +1393,7 @@ public @UsesObjectEquals class Runtime {
             return compare(obj, true);
         }
 
+        @Pure
         private int compare(Version obj, boolean ignoreOpt) {
             if (obj == null)
                 throw new NullPointerException();
@@ -1516,7 +1519,8 @@ public @UsesObjectEquals class Runtime {
          *
          */
         @Override
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             boolean ret = equalsIgnoreOptional(obj);
             if (!ret)
                 return false;
@@ -1540,7 +1544,7 @@ public @UsesObjectEquals class Runtime {
          *          ignoring the optional build information
          *
          */
-        public boolean equalsIgnoreOptional(Object obj) {
+        public boolean equalsIgnoreOptional(@Nullable Object obj) {
             if (this == obj)
                 return true;
             return (obj instanceof Version that)

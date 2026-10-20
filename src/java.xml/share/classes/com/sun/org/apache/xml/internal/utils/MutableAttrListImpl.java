@@ -22,6 +22,7 @@
 package com.sun.org.apache.xml.internal.utils;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.Serializable;
 
 import org.xml.sax.Attributes;

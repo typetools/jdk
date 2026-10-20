@@ -25,6 +25,7 @@
 
 package java.lang.module;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -54,7 +55,7 @@ public class InvalidModuleDescriptorException extends RuntimeException {
      *        The detail message; can be {@code null}
      */
     @SideEffectFree
-    public InvalidModuleDescriptorException(String msg) {
+    public InvalidModuleDescriptorException(@Nullable String msg) {
         super(msg);
     }
 }

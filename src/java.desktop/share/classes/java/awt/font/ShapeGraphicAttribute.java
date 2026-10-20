@@ -237,6 +237,7 @@ public final class ShapeGraphicAttribute extends GraphicAttribute {
      * {@code ShapeGraphicAttribute} equals {@code rhs};
      * {@code false} otherwise.
      */
+    @Pure
     public boolean equals(ShapeGraphicAttribute rhs) {
 
         if (rhs == null) {

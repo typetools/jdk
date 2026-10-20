@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -59,7 +60,7 @@ public class ProviderException extends RuntimeException {
      * @param s the detail message.
      */
     @SideEffectFree
-    public ProviderException(String s) {
+    public ProviderException(@Nullable String s) {
         super(s);
     }
 
@@ -75,7 +76,7 @@ public class ProviderException extends RuntimeException {
      * @since 1.5
      */
     @SideEffectFree
-    public ProviderException(String message, Throwable cause) {
+    public ProviderException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -91,7 +92,7 @@ public class ProviderException extends RuntimeException {
      * @since 1.5
      */
     @SideEffectFree
-    public ProviderException(Throwable cause) {
+    public ProviderException(@Nullable Throwable cause) {
         super(cause);
     }
 }

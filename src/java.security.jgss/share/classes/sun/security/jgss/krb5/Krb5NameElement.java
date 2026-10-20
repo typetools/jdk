@@ -223,6 +223,7 @@ public class Krb5NameElement
      * @exception GSSException with major codes of BAD_NAMETYPE,
      *  BAD_NAME, FAILURE
      */
+    @Pure
     public boolean equals(GSSNameSpi other) throws GSSException {
 
         if (other == this)

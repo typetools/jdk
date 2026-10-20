@@ -35,6 +35,8 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
  * A service that decouples the production of new asynchronous tasks
  * from the consumption of the results of completed tasks.  Producers
@@ -108,7 +110,7 @@ public interface CompletionService<V> {
      * @return the Future representing the next completed task, or
      *         {@code null} if none are present
      */
-    Future<V> poll();
+    @Nullable Future<V> poll();
 
     /**
      * Retrieves and removes the Future representing the next
@@ -124,5 +126,5 @@ public interface CompletionService<V> {
      *         before one is present
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> poll(long timeout, TimeUnit unit) throws InterruptedException;
+    @Nullable Future<V> poll(long timeout, TimeUnit unit) throws InterruptedException;
 }

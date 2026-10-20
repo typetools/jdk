@@ -27,7 +27,6 @@ package jdk.javadoc.internal.doclets.toolkit;
 
 import org.checkerframework.dataflow.qual.Pure;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;

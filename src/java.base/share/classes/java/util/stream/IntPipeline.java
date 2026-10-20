@@ -24,6 +24,7 @@
  */
 package java.util.stream;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import java.util.IntSummaryStatistics;
 import java.util.Objects;
 import java.util.OptionalDouble;
@@ -558,6 +559,7 @@ abstract class IntPipeline<E_IN>
     }
 
     @Override
+    @SideEffectFree
     public final int[] toArray() {
         return Nodes.flattenInt((Node.OfInt) evaluateToArrayNode(Integer[]::new))
                         .asPrimitiveArray();

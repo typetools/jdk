@@ -24,6 +24,7 @@
  */
 package jdk.internal.util;
 
+import org.checkerframework.dataflow.qual.Pure;
 import java.util.Arrays;
 import java.util.Collection;
 import jdk.internal.access.JavaLangAccess;
@@ -219,6 +220,7 @@ public class ArraysSupport {
         return result;
     }
 
+    @Pure
     private static int hashCode(int result, byte[] a, int fromIndex, int length) {
         int end = fromIndex + length;
         for (int i = fromIndex; i < end; i++) {
@@ -227,6 +229,7 @@ public class ArraysSupport {
         return result;
     }
 
+    @Pure
     private static int hashCode(int result, char[] a, int fromIndex, int length) {
         int end = fromIndex + length;
         for (int i = fromIndex; i < end; i++) {
@@ -235,6 +238,7 @@ public class ArraysSupport {
         return result;
     }
 
+    @Pure
     private static int hashCode(int result, short[] a, int fromIndex, int length) {
         int end = fromIndex + length;
         for (int i = fromIndex; i < end; i++) {
@@ -243,6 +247,7 @@ public class ArraysSupport {
         return result;
     }
 
+    @Pure
     private static int hashCode(int result, int[] a, int fromIndex, int length) {
         int end = fromIndex + length;
         for (int i = fromIndex; i < end; i++) {

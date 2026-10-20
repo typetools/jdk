@@ -333,6 +333,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      *
      * @since 1.8
      */
+    @SideEffectFree
     public String toGenericString() {
         if (isPrimitive()) {
             return toString();
@@ -439,6 +440,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @ForName
     @CallerSensitive
+    @SideEffectFree
     public static Class<?> forName(@ClassGetName String className)
                 throws ClassNotFoundException {
         Class<?> caller = Reflection.getCallerClass();
@@ -447,6 +449,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
 
     // Caller-sensitive adapter method for reflective invocation
     @CallerSensitiveAdapter
+    @SideEffectFree
     private static Class<?> forName(String className, Class<?> caller)
             throws ClassNotFoundException {
         ClassLoader loader = (caller == null) ? ClassLoader.getSystemClassLoader()
@@ -523,6 +526,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since     1.2
      */
     @CallerSensitive
+    @SideEffectFree
     public static Class<?> forName(@ClassGetName String name, boolean initialize,
                                    @Nullable ClassLoader loader)
         throws ClassNotFoundException
@@ -540,6 +544,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
 
     // Caller-sensitive adapter method for reflective invocation
     @CallerSensitiveAdapter
+    @SideEffectFree
     private static Class<?> forName(String name, boolean initialize, ClassLoader loader, Class<?> caller)
             throws ClassNotFoundException
     {
@@ -614,6 +619,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @SuppressWarnings("removal")
     @CallerSensitive
+    @SideEffectFree
     public static Class<?> forName(Module module, String name) {
         Class<?> caller = null;
         SecurityManager sm = System.getSecurityManager();
@@ -626,6 +632,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
     // Caller-sensitive adapter method for reflective invocation
     @SuppressWarnings("removal")
     @CallerSensitiveAdapter
+    @SideEffectFree
     private static Class<?> forName(Module module, String name, Class<?> caller) {
         Objects.requireNonNull(module);
         Objects.requireNonNull(name);
@@ -707,6 +714,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
     @SuppressWarnings("removal")
     @CallerSensitive
     @Deprecated(since="9")
+    @SideEffectFree
     public @NonNull T newInstance()
         throws InstantiationException, IllegalAccessException
     {
@@ -1037,6 +1045,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      *
      * @since 9
      */
+    @Pure
     public Module getModule() {
         return module;
     }
@@ -1053,6 +1062,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
     private transient Object classData;
 
     // package-private
+    @Pure
     Object getClassData() {
         return classData;
     }
@@ -1072,6 +1082,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      *     <cite>The Java Virtual Machine Specification</cite>
      * @since 1.5
      */
+    @SideEffectFree
     @SuppressWarnings("unchecked")
     public TypeVariable<Class<T>>[] getTypeParameters() {
         ClassRepository info = getGenericInfo();
@@ -1128,6 +1139,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @return the direct superclass of the class represented by this {@code Class} object
      * @since 1.5
      */
+    @SideEffectFree
     public @Nullable Type getGenericSuperclass() {
         ClassRepository info = getGenericInfo();
         if (info == null) {
@@ -1189,6 +1201,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 9
      * @jls 6.7 Fully Qualified Names
      */
+    @Pure
     public @DotSeparatedIdentifiers String getPackageName() {
         String pn = this.packageName;
         if (pn == null) {
@@ -1324,6 +1337,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @return an array of interfaces directly implemented by this class
      * @since 1.5
      */
+    @SideEffectFree
     public Type[] getGenericInterfaces() {
         ClassRepository info = getGenericInfo();
         return (info == null) ?  getInterfaces() : info.getSuperInterfaces();
@@ -1432,6 +1446,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jvms 4.7.6 The InnerClasses Attribute
      * @since 20
      */
+    @SideEffectFree
     public Set<AccessFlag> accessFlags() {
         // Location.CLASS allows SUPER and AccessFlag.MODULE which
         // INNER_CLASS forbids. INNER_CLASS allows PRIVATE, PROTECTED,
@@ -1455,6 +1470,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      *          a primitive type or void.
      * @since   1.1
      */
+    @SideEffectFree
     public native Object @Nullable [] getSigners();
 
 
@@ -1501,6 +1517,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.5
      */
     @CallerSensitive
+    @SideEffectFree
     public @Nullable Method getEnclosingMethod() throws SecurityException {
         EnclosingMethodInfo enclosingInfo = getEnclosingMethodInfo();
 
@@ -1659,6 +1676,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.5
      */
     @CallerSensitive
+    @SideEffectFree
     public @Nullable Constructor<?> getEnclosingConstructor() throws SecurityException {
         EnclosingMethodInfo enclosingInfo = getEnclosingMethodInfo();
 
@@ -1725,6 +1743,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @CallerSensitive
+    @Pure
     public @Nullable Class<?> getDeclaringClass() throws SecurityException {
         final Class<?> candidate = getDeclaringClass0();
 
@@ -1739,6 +1758,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
         return candidate;
     }
 
+    @Pure
     private native Class<?> getDeclaringClass0();
 
 
@@ -1810,6 +1830,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @return the simple name of the underlying class
      * @since 1.5
      */
+    @Pure
     public @ClassGetSimpleName String getSimpleName() {
         if (isUnnamedClass()) {
             return "";
@@ -1840,6 +1861,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @return an informative string for the name of this class or interface
      * @since 1.8
      */
+    @SideEffectFree
     public String getTypeName() {
         if (isArray()) {
             try {
@@ -1882,6 +1904,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 6.7 Fully Qualified Names and Canonical Names
      * @since 1.5
      */
+    @Pure
     public @Nullable @CanonicalName String getCanonicalName() {
         if (isUnnamedClass()) {
             return null;
@@ -1934,6 +1957,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @PreviewFeature(feature=PreviewFeature.Feature.UNNAMED_CLASSES,
                     reflective=true)
+    @Pure
     public boolean isUnnamedClass() {
         return PreviewFeatures.isEnabled() && isSynthetic()
                                            && isTopLevelClass()
@@ -2056,6 +2080,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @SuppressWarnings("removal")
     @CallerSensitive
+    @SideEffectFree
     public Class<?>[] getClasses() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
@@ -2125,6 +2150,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.3 Field Declarations
      */
     @CallerSensitive
+    @SideEffectFree
     public Field[] getFields() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2216,6 +2242,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @CallerSensitive
+    @SideEffectFree
     public Method[] getMethods() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2258,6 +2285,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @CallerSensitive
+    @SideEffectFree
     public Constructor<?>[] getConstructors() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2311,6 +2339,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.3 Field Declarations
      */
     @CallerSensitive
+    @SideEffectFree
     public Field getField(String name)
         throws NoSuchFieldException, SecurityException {
         Objects.requireNonNull(name);
@@ -2421,7 +2450,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.4 Method Declarations
      * @since 1.1
      */
-    @Pure
+    @SideEffectFree
     @GetMethod
     @CallerSensitive
     public Method getMethod(String name, Class<?> @Nullable ... parameterTypes)
@@ -2472,7 +2501,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @GetConstructor
-    @Pure
+    @SideEffectFree
     @CallerSensitive
     public Constructor<T> getConstructor(Class<?>... parameterTypes)
         throws NoSuchMethodException, SecurityException
@@ -2524,6 +2553,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.5 Member Type Declarations
      */
     @CallerSensitive
+    @SideEffectFree
     public Class<?>[] getDeclaredClasses() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2577,6 +2607,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.3 Field Declarations
      */
     @CallerSensitive
+    @SideEffectFree
     public Field[] getDeclaredFields() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2639,6 +2670,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 16
      */
     @CallerSensitive
+    @SideEffectFree
     public RecordComponent[] getRecordComponents() {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2711,6 +2743,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @CallerSensitive
+    @SideEffectFree
     public Method[] getDeclaredMethods() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2762,6 +2795,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.8 Constructor Declarations
      */
     @CallerSensitive
+    @SideEffectFree
     public Constructor<?>[] getDeclaredConstructors() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -2813,6 +2847,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @jls 8.3 Field Declarations
      */
     @CallerSensitive
+    @SideEffectFree
     public Field getDeclaredField(String name)
         throws NoSuchFieldException, SecurityException {
         Objects.requireNonNull(name);
@@ -2880,6 +2915,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @GetMethod
     @CallerSensitive
+    @SideEffectFree
     public Method getDeclaredMethod(String name, Class<?>... parameterTypes)
         throws NoSuchMethodException, SecurityException {
         Objects.requireNonNull(name);
@@ -2905,6 +2941,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @return the list of {@code Method} objects for the public methods of
      *         this class matching the specified name and parameters
      */
+    @SideEffectFree
     List<Method> getDeclaredPublicMethods(String name, Class<?>... parameterTypes) {
         Method[] methods = privateGetDeclaredMethods(/* publicOnly */ true);
         ReflectionFactory factory = getReflectionFactory();
@@ -2962,6 +2999,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.1
      */
     @CallerSensitive
+    @SideEffectFree
     public Constructor<T> getDeclaredConstructor(Class<?>... parameterTypes)
         throws NoSuchMethodException, SecurityException
     {
@@ -3127,6 +3165,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @revised 9
      */
     @CallerSensitive
+    @SideEffectFree
     public @Nullable URL getResource(String name) {
         name = resolveName(name);
 
@@ -3211,6 +3250,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @see java.lang.RuntimePermission
      * @since 1.2
      */
+    @SideEffectFree
     public java.security.ProtectionDomain getProtectionDomain() {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
@@ -4033,6 +4073,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.5
      * @jls 8.9.1 Enum Constants
      */
+    @SideEffectFree
     public @NonNull T @Nullable [] getEnumConstants() {
         T[] values = getEnumConstantsShared();
         return (values != null) ? values.clone() : null;
@@ -4110,6 +4151,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @SuppressWarnings("unchecked")
     @IntrinsicCandidate
+    @SideEffectFree
     public @PolyNull @Signed T cast(@PolyNull Object obj) {
         if (obj != null && !isInstance(obj))
             throw new ClassCastException(cannotCastMsg(obj));
@@ -4143,6 +4185,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.5
      */
     @SuppressWarnings("unchecked")
+    @SideEffectFree
     public <U> Class<? extends U> asSubclass(Class<U> clazz) {
         if (clazz.isAssignableFrom(this))
             return (Class<? extends U>) this;
@@ -4160,6 +4203,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @Override
     @SuppressWarnings("unchecked")
+    @Pure
     public <A extends Annotation> @Nullable A getAnnotation(Class<A> annotationClass) {
         Objects.requireNonNull(annotationClass);
 
@@ -4186,6 +4230,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.8
      */
     @Override
+    @SideEffectFree
     public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationClass) {
         Objects.requireNonNull(annotationClass);
 
@@ -4203,6 +4248,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Annotation[] getAnnotations() {
         return AnnotationParser.toArray(annotationData().annotations);
     }
@@ -4217,6 +4263,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      */
     @Override
     @SuppressWarnings("unchecked")
+    @Pure
     public <A extends Annotation> @Nullable A getDeclaredAnnotation(Class<A> annotationClass) {
         Objects.requireNonNull(annotationClass);
 
@@ -4232,6 +4279,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.8
      */
     @Override
+    @SideEffectFree
     public <A extends Annotation> A[] getDeclaredAnnotationsByType(Class<A> annotationClass) {
         Objects.requireNonNull(annotationClass);
 
@@ -4247,6 +4295,7 @@ public final @Interned class Class<@UnknownKeyFor T> implements java.io.Serializ
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Annotation[] getDeclaredAnnotations()  {
         return AnnotationParser.toArray(annotationData().declaredAnnotations);
     }

@@ -25,11 +25,11 @@
 
 package java.net;
 
-import java.io.IOException;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.io.IOException;
 
 /**
  * Thrown to indicate that the IP address of a host could not be determined.

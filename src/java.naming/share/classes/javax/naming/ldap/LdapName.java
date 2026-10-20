@@ -712,6 +712,7 @@ public class LdapName implements Name {
      *          is less than, equal to, or greater than the given obj.
      * @exception ClassCastException if obj is null or not a LdapName.
      */
+    @Pure
     public int compareTo(Object obj) {
 
         if (!(obj instanceof LdapName)) {

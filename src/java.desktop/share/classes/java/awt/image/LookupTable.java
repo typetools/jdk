@@ -28,7 +28,6 @@ package java.awt.image;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 /**
  * This abstract class defines a lookup table object.  ByteLookupTable
  * and ShortLookupTable are subclasses, which

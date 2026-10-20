@@ -25,6 +25,7 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -48,7 +49,7 @@ public class LambdaConversionException extends Exception {
      * @param message the detail message
      */
     @SideEffectFree
-    public LambdaConversionException(String message) {
+    public LambdaConversionException(@Nullable String message) {
         super(message);
     }
 
@@ -58,7 +59,7 @@ public class LambdaConversionException extends Exception {
      * @param cause the cause
      */
     @SideEffectFree
-    public LambdaConversionException(String message, Throwable cause) {
+    public LambdaConversionException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -67,7 +68,7 @@ public class LambdaConversionException extends Exception {
      * @param cause the cause
      */
     @SideEffectFree
-    public LambdaConversionException(Throwable cause) {
+    public LambdaConversionException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -80,7 +81,7 @@ public class LambdaConversionException extends Exception {
      * @param writableStackTrace whether or not the stack trace is writable
      */
     @SideEffectFree
-    public LambdaConversionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public LambdaConversionException(@Nullable String message, @Nullable Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

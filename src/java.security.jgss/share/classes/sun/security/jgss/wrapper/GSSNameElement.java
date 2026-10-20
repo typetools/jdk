@@ -235,6 +235,7 @@ public class GSSNameElement implements GSSNameSpi {
         return SunNativeProvider.INSTANCE;
     }
 
+    @Pure
     public boolean equals(GSSNameSpi other) throws GSSException {
         if (!(other instanceof GSSNameElement)) {
             return false;

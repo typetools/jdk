@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.impl.dv.xs;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xerces.internal.impl.Constants;
 import com.sun.org.apache.xerces.internal.impl.dv.DatatypeException;
 import com.sun.org.apache.xerces.internal.impl.dv.InvalidDatatypeFacetException;
@@ -1963,6 +1964,7 @@ public class XSSimpleTypeDecl implements XSSimpleType, TypeInfo {
 
     }//getActualValue()
 
+    @Pure
     public boolean isEqual(Object value1, Object value2) {
         if (value1 == null) {
             return false;

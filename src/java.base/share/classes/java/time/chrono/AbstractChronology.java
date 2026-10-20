@@ -665,6 +665,7 @@ public abstract class AbstractChronology implements Chronology {
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(Chronology other) {
         return getId().compareTo(other.getId());
     }

@@ -589,7 +589,8 @@ public abstract class PathFileObject implements JavaFileObject {
      *  implementations of FileObject.toURI(). */
     public static class CannotCreateUriError extends Error {
         private static final long serialVersionUID = 9101708840997613546L;
-        public CannotCreateUriError(String value, Throwable cause) {
+        @SideEffectFree
+        public CannotCreateUriError(@Nullable String value, @Nullable Throwable cause) {
             super(value, cause);
         }
     }

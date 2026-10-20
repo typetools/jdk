@@ -26,6 +26,8 @@
 package javax.xml.xpath;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.PrintWriter;
 import java.io.IOException;
@@ -68,6 +70,7 @@ public class XPathException extends Exception {
      * @throws NullPointerException When {@code message} is
      *   {@code null}.
      */
+    @SideEffectFree
     public XPathException(String message) {
         super(message);
         if ( message == null ) {
@@ -86,6 +89,7 @@ public class XPathException extends Exception {
      *
      * @throws NullPointerException if {@code cause} is {@code null}.
      */
+    @SideEffectFree
     public XPathException(Throwable cause) {
         super(cause);
         if ( cause == null ) {
@@ -98,6 +102,7 @@ public class XPathException extends Exception {
      *
      * @return Cause of this XPathException.
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return super.getCause();
     }

@@ -35,9 +35,18 @@
 
 package java.util.concurrent;
 
+import org.checkerframework.checker.index.qual.CanShrink;
+import org.checkerframework.checker.index.qual.PolyGrowShrink;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
@@ -45,15 +54,12 @@ import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
-import org.checkerframework.checker.nonempty.qual.PolyNonEmpty;
-import org.checkerframework.checker.index.qual.PolyGrowShrink;
-import org.checkerframework.checker.lock.qual.GuardSatisfied;
-import org.checkerframework.checker.index.qual.CanShrink;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.util.AbstractQueue;
 import java.util.Collection;
 import java.util.Iterator;
@@ -114,7 +120,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Doug Lea
  * @param <E> the type of elements held in this queue
  */
-@AnnotatedFor({"nullness"})
+@AnnotatedFor({"nullness", "modifiability"})
 public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     implements BlockingQueue<E> {
 
@@ -149,7 +155,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     /**
      * Creates a new {@code DelayQueue} that is initially empty.
      */
-    public DelayQueue() {}
+    public @Modifiable @IteratorPolyMod DelayQueue() {}
 
     /**
      * Creates a {@code DelayQueue} initially containing the elements of the
@@ -159,7 +165,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public DelayQueue(Collection<? extends E> c) {
+    public @Modifiable @IteratorPolyMod DelayQueue(Collection<? extends E> c) {
         this.addAll(c);
     }
 
@@ -173,7 +179,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean add(E e) {
+    public boolean add(@Growable DelayQueue<E> this, E e) {
         return offer(e);
     }
 
@@ -186,7 +192,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean offer(E e) {
+    public boolean offer(@Growable DelayQueue<E> this, E e) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -210,7 +216,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void put(E e) {
+    public void put(@Growable DelayQueue<E> this, E e) {
         offer(e);
     }
 
@@ -226,7 +232,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean offer(E e, long timeout, TimeUnit unit) {
+    public boolean offer(@Growable DelayQueue<E> this, E e, long timeout, TimeUnit unit) {
         return offer(e);
     }
 
@@ -240,7 +246,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable E poll(@GuardSatisfied @CanShrink DelayQueue<E> this) {
+    public @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -263,7 +269,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E take(@GuardSatisfied @CanShrink DelayQueue<E> this) throws InterruptedException {
+    public E take(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this) throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -310,7 +316,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public @Nullable E poll(@GuardSatisfied @CanShrink DelayQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
+    public @Nullable E poll(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this, long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
@@ -362,7 +368,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public E remove() {
+    public E remove(@Shrinkable DelayQueue<E> this) {
         return super.remove();
     }
 
@@ -405,7 +411,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly({"this", "#1"})
     @DoesNotUnrefineReceiver("modifiability")
-    public int drainTo(@GuardSatisfied @CanShrink DelayQueue<E> this, Collection<? super E> c) {
+    public int drainTo(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this, @Growable Collection<? super E> c) {
         return drainTo(c, Integer.MAX_VALUE);
     }
 
@@ -417,7 +423,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly({"this", "#1"})
     @DoesNotUnrefineReceiver("modifiability")
-    public int drainTo(@GuardSatisfied @CanShrink DelayQueue<E> this, Collection<? super E> c, int maxElements) {
+    public int drainTo(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this, @Growable Collection<? super E> c, int maxElements) {
         Objects.requireNonNull(c);
         if (c == this)
             throw new IllegalArgumentException();
@@ -449,7 +455,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void clear(@GuardSatisfied @CanShrink DelayQueue<E> this) {
+    public void clear(@Shrinkable @GuardSatisfied @CanShrink DelayQueue<E> this) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -544,7 +550,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean remove(@CanShrink DelayQueue<E> this, @UnknownSignedness Object o) {
+    public boolean remove(@Shrinkable @CanShrink DelayQueue<E> this, @UnknownSignedness Object o) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -583,7 +589,7 @@ public class DelayQueue<E extends @NonNull Delayed> extends AbstractQueue<E>
      * @return an iterator over the elements in this queue
      */
     @SideEffectFree
-    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty DelayQueue<E> this) {
+    public @PolyGrowShrink @PolyModifiable @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyModifiable @PolyNonEmpty DelayQueue<E> this) {
         return new Itr(toArray());
     }
 

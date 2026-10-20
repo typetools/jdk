@@ -25,12 +25,11 @@
 
 package java.lang;
 
+import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
-
-import org.checkerframework.checker.interning.qual.UsesObjectEquals;
-import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.lang.ref.WeakReference;
 import java.util.Objects;
@@ -495,6 +494,7 @@ public @UsesObjectEquals class ThreadLocal<@Nullable T> {
         /**
          * Returns the number of elements in the map.
          */
+        @Pure
         int size() {
             return size;
         }

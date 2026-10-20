@@ -24,7 +24,9 @@
  */
 package jdk.tools.jlink.internal;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.module.ModuleDescriptor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -435,7 +437,8 @@ public class ResourcePoolManager {
         }
 
         @Override
-        public boolean equals(Object other) {
+        @Pure
+        public boolean equals(@Nullable Object other) {
             if (!(other instanceof CompressedModuleData)) {
                 return false;
             }

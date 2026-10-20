@@ -26,6 +26,8 @@
 package com.sun.tools.javac.code;
 
 import org.checkerframework.checker.interning.qual.InternedDistinct;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
 
 import java.util.Iterator;
 
@@ -104,7 +106,8 @@ public class TypeAnnotationPosition {
         }
 
         @Override
-        public boolean equals(Object other) {
+        @Pure
+        public boolean equals(@Nullable Object other) {
             return (other instanceof TypePathEntry entry)
                     && this.tag == entry.tag
                     && this.arg == entry.arg;

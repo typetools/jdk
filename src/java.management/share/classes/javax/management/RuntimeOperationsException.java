@@ -27,6 +27,8 @@ package javax.management;
 
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Represents runtime exceptions thrown in the agent when performing operations on MBeans.
@@ -50,6 +52,7 @@ public class RuntimeOperationsException extends JMRuntimeException   {
      *
      * @param e the wrapped exception.
      */
+    @SideEffectFree
     public RuntimeOperationsException(java.lang.RuntimeException e) {
         super() ;
         runtimeException = e ;
@@ -62,7 +65,8 @@ public class RuntimeOperationsException extends JMRuntimeException   {
      * @param e the wrapped exception.
      * @param message the detail message.
      */
-    public RuntimeOperationsException(java.lang.RuntimeException e, String message) {
+    @SideEffectFree
+    public RuntimeOperationsException(java.lang.RuntimeException e, @Nullable String message) {
         super(message);
         runtimeException = e ;
     }
@@ -81,6 +85,7 @@ public class RuntimeOperationsException extends JMRuntimeException   {
      *
      * @return the wrapped {@link RuntimeException}.
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return runtimeException;
     }

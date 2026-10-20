@@ -26,6 +26,7 @@
 package com.sun.jndi.ldap;
 
 import org.checkerframework.checker.interning.qual.Interned;
+
 import java.io.IOException;
 
 /**

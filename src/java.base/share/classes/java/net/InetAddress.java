@@ -972,6 +972,7 @@ public sealed class InetAddress implements Serializable permits Inet4Address, In
         }
 
         @Override
+        @Pure
         public int compareTo(CachedAddresses other) {
             // natural order is expiry time -
             // compare difference of expiry times rather than

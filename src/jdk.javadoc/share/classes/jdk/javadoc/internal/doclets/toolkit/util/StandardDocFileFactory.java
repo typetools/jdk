@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.doclets.toolkit.util;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;

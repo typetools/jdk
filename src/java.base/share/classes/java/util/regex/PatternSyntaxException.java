@@ -106,7 +106,7 @@ public class PatternSyntaxException
      *
      * @return  The full detail message
      */
-    @Pure
+    @SideEffectFree
     public String getMessage(@GuardSatisfied PatternSyntaxException this) {
         StringBuilder sb = new StringBuilder();
         sb.append(desc);

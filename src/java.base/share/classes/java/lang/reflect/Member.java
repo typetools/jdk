@@ -25,6 +25,9 @@
 
 package java.lang.reflect;
 
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Set;
 
 /**
@@ -60,6 +63,7 @@ public interface Member {
      * @return an object representing the declaring class of the
      * underlying member
      */
+    @Pure
     public Class<?> getDeclaringClass();
 
     /**
@@ -68,6 +72,7 @@ public interface Member {
      *
      * @return the simple name of the underlying member
      */
+    @Pure
     public String getName();
 
     /**
@@ -80,6 +85,7 @@ public interface Member {
      * @see Modifier
      * @see #accessFlags()
      */
+    @Pure
     public int getModifiers();
 
 
@@ -93,6 +99,7 @@ public interface Member {
      * @see #getModifiers()
      * @since 20
      */
+    @SideEffectFree
     public default Set<AccessFlag> accessFlags() {
         throw new UnsupportedOperationException();
     }
@@ -106,5 +113,6 @@ public interface Member {
      * @jls 13.1 The Form of a Binary
      * @since 1.5
      */
+    @Pure
     public boolean isSynthetic();
 }

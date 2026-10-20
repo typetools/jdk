@@ -26,6 +26,7 @@
 package sun.security.jgss;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import org.ietf.jgss.MessageProp;
 import java.util.LinkedList;
 

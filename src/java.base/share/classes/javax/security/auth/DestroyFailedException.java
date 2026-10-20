@@ -25,6 +25,7 @@
 
 package javax.security.auth;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -58,7 +59,7 @@ public class DestroyFailedException extends Exception {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public DestroyFailedException(String msg) {
+    public DestroyFailedException(@Nullable String msg) {
         super(msg);
     }
 }

@@ -231,6 +231,7 @@ public final class Constructor<T> extends Executable {
      * declares the constructor represented by this object.
      */
     @Override
+    @Pure
     public Class<T> getDeclaringClass() {
         return clazz;
     }
@@ -240,6 +241,7 @@ public final class Constructor<T> extends Executable {
      * the binary name of the constructor's declaring class.
      */
     @Override
+    @Pure
     public String getName() {
         return getDeclaringClass().getName();
     }
@@ -249,6 +251,7 @@ public final class Constructor<T> extends Executable {
      * @jls 8.8.3 Constructor Modifiers
      */
     @Override
+    @Pure
     public int getModifiers() {
         return modifiers;
     }
@@ -260,6 +263,7 @@ public final class Constructor<T> extends Executable {
      */
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
+    @SideEffectFree
     public TypeVariable<Constructor<T>>[] getTypeParameters() {
       if (getSignature() != null) {
         return (TypeVariable<Constructor<T>>[])getGenericInfo().getTypeParameters();
@@ -282,6 +286,7 @@ public final class Constructor<T> extends Executable {
      * {@inheritDoc}
      */
     @Override
+    @SideEffectFree
     public Class<?>[] getParameterTypes() {
         return parameterTypes.clone();
     }
@@ -290,6 +295,7 @@ public final class Constructor<T> extends Executable {
      * {@inheritDoc}
      * @since 1.8
      */
+    @Pure
     public int getParameterCount() { return parameterTypes.length; }
 
     /**
@@ -300,6 +306,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Type[] getGenericParameterTypes() {
         return super.getGenericParameterTypes();
     }
@@ -308,6 +315,7 @@ public final class Constructor<T> extends Executable {
      * {@inheritDoc}
      */
     @Override
+    @SideEffectFree
     public Class<?>[] getExceptionTypes() {
         return exceptionTypes.clone();
     }
@@ -321,6 +329,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Type[] getGenericExceptionTypes() {
         return super.getGenericExceptionTypes();
     }
@@ -439,6 +448,7 @@ public final class Constructor<T> extends Executable {
      * @jls 8.9.2 Enum Body Declarations
      */
     @Override
+    @SideEffectFree
     public String toGenericString() {
         return sharedToGenericString(Modifier.constructorModifiers(), false);
     }
@@ -499,6 +509,7 @@ public final class Constructor<T> extends Executable {
     @NewInstance
     @CallerSensitive
     @ForceInline // to ensure Reflection.getCallerClass optimization
+    @SideEffectFree
     public @NonNull T newInstance(Object ... initargs)
         throws InstantiationException, IllegalAccessException,
                IllegalArgumentException, InvocationTargetException
@@ -619,6 +630,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.5
      */
     @Override
+    @Pure
     public <T extends Annotation> @Nullable T getAnnotation(Class<T> annotationClass) {
         return super.getAnnotation(annotationClass);
     }
@@ -628,6 +640,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Annotation[] getDeclaredAnnotations()  {
         return super.getDeclaredAnnotations();
     }
@@ -637,6 +650,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.5
      */
     @Override
+    @SideEffectFree
     public Annotation[][] getParameterAnnotations() {
         return sharedGetParameterAnnotations(parameterTypes, parameterAnnotations);
     }
@@ -670,6 +684,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.8
      */
     @Override
+    @SideEffectFree
     public AnnotatedType getAnnotatedReturnType() {
         return getAnnotatedReturnType0(getDeclaringClass());
     }
@@ -679,6 +694,7 @@ public final class Constructor<T> extends Executable {
      * @since 1.8
      */
     @Override
+    @SideEffectFree
     public @Nullable AnnotatedType getAnnotatedReceiverType() {
         Class<?> thisDeclClass = getDeclaringClass();
         Class<?> enclosingClass = thisDeclClass.getEnclosingClass();

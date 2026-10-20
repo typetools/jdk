@@ -333,7 +333,8 @@ public class ImageTypeSpecifier {
                                                 bandOffsets);
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (!(o instanceof Interleaved that)) {
                 return false;
             }
@@ -473,7 +474,8 @@ public class ImageTypeSpecifier {
                                                      bandOffsets);
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (!(o instanceof Banded that)) {
                 return false;
             }

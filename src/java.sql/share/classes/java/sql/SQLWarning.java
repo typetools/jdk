@@ -26,6 +26,7 @@
 package java.sql;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * <P>An exception that provides information on  database access
@@ -60,6 +61,7 @@ public class SQLWarning extends SQLException {
      * @param SQLState an XOPEN or SQL:2003 code identifying the warning
      * @param vendorCode a database vendor-specific warning code
      */
+     @SideEffectFree
      public SQLWarning(@Nullable String reason, @Nullable String SQLState, int vendorCode) {
         super(reason, SQLState, vendorCode);
         DriverManager.println("SQLWarning: reason(" + reason +
@@ -80,6 +82,7 @@ public class SQLWarning extends SQLException {
      * @param reason a description of the warning
      * @param SQLState an XOPEN or SQL:2003 code identifying the warning
      */
+    @SideEffectFree
     public SQLWarning(@Nullable String reason, @Nullable String SQLState) {
         super(reason, SQLState);
         DriverManager.println("SQLWarning: reason(" + reason +
@@ -98,6 +101,7 @@ public class SQLWarning extends SQLException {
      *
      * @param reason a description of the warning
      */
+    @SideEffectFree
     public SQLWarning(@Nullable String reason) {
         super(reason);
         DriverManager.println("SQLWarning: reason(" + reason + ")");
@@ -113,6 +117,7 @@ public class SQLWarning extends SQLException {
      * {@link Throwable#initCause(java.lang.Throwable)} method.
      *
      */
+    @SideEffectFree
     public SQLWarning() {
         super();
         DriverManager.println("SQLWarning: ");
@@ -130,6 +135,7 @@ public class SQLWarning extends SQLException {
      * @param cause the underlying reason for this {@code SQLWarning} (which is saved for later retrieval by the {@code getCause()} method); may be null indicating
      *     the cause is non-existent or unknown.
      */
+    @SideEffectFree
     public SQLWarning(@Nullable Throwable cause) {
         super(cause);
         DriverManager.println("SQLWarning");
@@ -147,6 +153,7 @@ public class SQLWarning extends SQLException {
      * (which is saved for later retrieval by the {@code getCause()} method);
      * may be null indicating the cause is non-existent or unknown.
      */
+    @SideEffectFree
     public SQLWarning(@Nullable String reason, @Nullable Throwable cause) {
         super(reason,cause);
         DriverManager.println("SQLWarning : reason("+ reason + ")");
@@ -163,6 +170,7 @@ public class SQLWarning extends SQLException {
      * @param cause the underlying reason for this {@code SQLWarning} (which is saved for later retrieval by the {@code getCause()} method); may be null indicating
      *     the cause is non-existent or unknown.
      */
+    @SideEffectFree
     public SQLWarning(@Nullable String reason, @Nullable String SQLState, @Nullable Throwable cause) {
         super(reason,SQLState,cause);
         DriverManager.println("SQLWarning: reason(" + reason +
@@ -181,6 +189,7 @@ public class SQLWarning extends SQLException {
      * @param cause the underlying reason for this {@code SQLWarning} (which is saved for later retrieval by the {@code getCause()} method); may be null indicating
      *     the cause is non-existent or unknown.
      */
+    @SideEffectFree
     public SQLWarning(@Nullable String reason, @Nullable String SQLState, int vendorCode, @Nullable Throwable cause) {
         super(reason,SQLState,vendorCode,cause);
         DriverManager.println("SQLWarning: reason(" + reason +

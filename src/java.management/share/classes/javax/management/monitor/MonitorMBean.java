@@ -28,6 +28,7 @@ package javax.management.monitor;
 // jmx imports
 //
 import org.checkerframework.dataflow.qual.Pure;
+
 import javax.management.ObjectName;
 
 /**

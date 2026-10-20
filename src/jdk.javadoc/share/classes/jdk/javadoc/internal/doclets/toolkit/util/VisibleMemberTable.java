@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -1139,7 +1140,8 @@ public class VisibleMemberTable {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    @Pure
+    public boolean equals(@Nullable Object obj) {
         if (!(obj instanceof VisibleMemberTable other))
             return false;
         return te.equals(other.te);

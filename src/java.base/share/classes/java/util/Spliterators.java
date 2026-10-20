@@ -26,17 +26,16 @@ package java.util;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Static classes and methods for operating on or creating instances of
@@ -910,7 +909,7 @@ public final class Spliterators {
 
         EmptySpliterator() { }
 
-        public S trySplit() {
+        public @Nullable S trySplit() {
             return null;
         }
 
@@ -1016,7 +1015,7 @@ public final class Spliterators {
         }
 
         @Override
-        public Spliterator<T> trySplit() {
+        public @Nullable Spliterator<T> trySplit() {
             int lo = index, mid = (lo + fence) >>> 1;
             if (lo >= mid) return null;
             if (estimatedSize == -1) {
@@ -1062,7 +1061,7 @@ public final class Spliterators {
         }
 
         @Override
-        public Comparator<? super T> getComparator() {
+        public @Nullable Comparator<? super T> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();
@@ -1117,7 +1116,7 @@ public final class Spliterators {
         }
 
         @Override
-        public OfInt trySplit() {
+        public @Nullable OfInt trySplit() {
             int lo = index, mid = (lo + fence) >>> 1;
             if (lo >= mid) return null;
             if (estimatedSize == -1) {
@@ -1161,7 +1160,7 @@ public final class Spliterators {
         }
 
         @Override
-        public Comparator<? super Integer> getComparator() {
+        public @Nullable Comparator<? super Integer> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();
@@ -1216,7 +1215,7 @@ public final class Spliterators {
         }
 
         @Override
-        public OfLong trySplit() {
+        public @Nullable OfLong trySplit() {
             int lo = index, mid = (lo + fence) >>> 1;
             if (lo >= mid) return null;
             if (estimatedSize == -1) {
@@ -1260,7 +1259,7 @@ public final class Spliterators {
         }
 
         @Override
-        public Comparator<? super Long> getComparator() {
+        public @Nullable Comparator<? super Long> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();
@@ -1315,7 +1314,7 @@ public final class Spliterators {
         }
 
         @Override
-        public OfDouble trySplit() {
+        public @Nullable OfDouble trySplit() {
             int lo = index, mid = (lo + fence) >>> 1;
             if (lo >= mid) return null;
             if (estimatedSize == -1) {
@@ -1359,7 +1358,7 @@ public final class Spliterators {
         }
 
         @Override
-        public Comparator<? super Double> getComparator() {
+        public @Nullable Comparator<? super Double> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();
@@ -1901,7 +1900,7 @@ public final class Spliterators {
         }
 
         @Override
-        public Spliterator<T> trySplit() {
+        public @Nullable Spliterator<T> trySplit() {
             /*
              * Split into arrays of arithmetically increasing batch
              * sizes.  This will only improve parallel performance if
@@ -1980,7 +1979,7 @@ public final class Spliterators {
         public int characteristics() { return characteristics; }
 
         @Override
-        public Comparator<? super T> getComparator() {
+        public @Nullable Comparator<? super T> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();
@@ -2034,7 +2033,7 @@ public final class Spliterators {
         }
 
         @Override
-        public OfInt trySplit() {
+        public @Nullable OfInt trySplit() {
             PrimitiveIterator.OfInt i = it;
             long s = est;
             if (s > 1 && i.hasNext()) {
@@ -2081,7 +2080,7 @@ public final class Spliterators {
         public int characteristics() { return characteristics; }
 
         @Override
-        public Comparator<? super Integer> getComparator() {
+        public @Nullable Comparator<? super Integer> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();
@@ -2130,7 +2129,7 @@ public final class Spliterators {
         }
 
         @Override
-        public OfLong trySplit() {
+        public @Nullable OfLong trySplit() {
             PrimitiveIterator.OfLong i = it;
             long s = est;
             if (s > 1 && i.hasNext()) {
@@ -2177,7 +2176,7 @@ public final class Spliterators {
         public int characteristics() { return characteristics; }
 
         @Override
-        public Comparator<? super Long> getComparator() {
+        public @Nullable Comparator<? super Long> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();
@@ -2226,7 +2225,7 @@ public final class Spliterators {
         }
 
         @Override
-        public OfDouble trySplit() {
+        public @Nullable OfDouble trySplit() {
             PrimitiveIterator.OfDouble i = it;
             long s = est;
             if (s > 1 && i.hasNext()) {
@@ -2273,7 +2272,7 @@ public final class Spliterators {
         public int characteristics() { return characteristics; }
 
         @Override
-        public Comparator<? super Double> getComparator() {
+        public @Nullable Comparator<? super Double> getComparator() {
             if (hasCharacteristics(Spliterator.SORTED))
                 return null;
             throw new IllegalStateException();

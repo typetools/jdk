@@ -310,6 +310,7 @@ public class AlgorithmId implements Serializable, DerEncoder {
      * Returns true iff the argument indicates the same algorithm
      * with the same parameters.
      */
+    @Pure
     public boolean equals(AlgorithmId other) {
         return algid.equals(other.algid) &&
             Arrays.equals(encodedParams, other.encodedParams);
@@ -342,6 +343,7 @@ public class AlgorithmId implements Serializable, DerEncoder {
      * Compares two algorithm IDs for equality.  Returns true iff
      * they are the same algorithm, ignoring algorithm parameters.
      */
+    @Pure
     public final boolean equals(ObjectIdentifier id) {
         return algid.equals((Object)id);
     }

@@ -1676,6 +1676,7 @@ public final class URI
      * @throws  ClassCastException
      *          If the given object is not a URI
      */
+    @Pure
     public int compareTo(URI that) {
         int c;
 
@@ -1947,6 +1948,7 @@ public final class URI
         return h;
     }
 
+    @Pure
     private static int compare(String s, String t) {
         boolean testForEquality = false;
         int result = percentNormalizedComparison(s, t, testForEquality);

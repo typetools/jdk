@@ -25,6 +25,7 @@
 
 package javax.net.ssl;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -45,7 +46,7 @@ public class SSLHandshakeException extends SSLException {
      * @param reason describes the problem.
      */
     @SideEffectFree
-    public SSLHandshakeException(String reason) {
+    public SSLHandshakeException(@Nullable String reason) {
         super(reason);
     }
 
@@ -62,7 +63,7 @@ public class SSLHandshakeException extends SSLException {
      * @since 19
      */
     @SideEffectFree
-    public SSLHandshakeException(String message, Throwable cause) {
+    public SSLHandshakeException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 }

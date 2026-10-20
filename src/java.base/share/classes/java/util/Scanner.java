@@ -39,9 +39,9 @@ import org.checkerframework.common.returnsreceiver.qual.This;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.*;
 import java.math.*;
@@ -1005,7 +1005,7 @@ public final @UsesObjectEquals class Scanner implements Iterator<String>, Closea
      * 2. null with needInput=false means we won't ever find it
      * 3. null with needInput=true means try again after readInput
      */
-    private String getCompleteTokenInBuffer(Pattern pattern) {
+    private @Nullable String getCompleteTokenInBuffer(@Nullable Pattern pattern) {
         matchValid = false;
         // Skip delims first
         matcher.usePattern(delimPattern);

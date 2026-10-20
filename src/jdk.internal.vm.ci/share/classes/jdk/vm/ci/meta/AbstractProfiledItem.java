@@ -62,6 +62,7 @@ public abstract class AbstractProfiledItem<T> implements Comparable<AbstractProf
      * {@code o}'s probability, 0 if there are equal otherwise 1.
      */
     @Override
+    @Pure
     public int compareTo(AbstractProfiledItem<?> o) {
         // Need to swap the order of operands so that higher probabilities are sorted first
         return Double.compare(o.getProbability(), getProbability());

@@ -30,6 +30,7 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
 import static java.util.zip.ZipUtils.*;
 import java.nio.file.attribute.FileTime;
 import java.util.Objects;
@@ -326,7 +327,7 @@ public @UsesObjectEquals class ZipEntry implements ZipConstants, Cloneable {
      * @see #setLastModifiedTime(FileTime)
      * @since 1.8
      */
-    public FileTime getLastModifiedTime() {
+    public @Nullable FileTime getLastModifiedTime() {
         if (mtime != null)
             return mtime;
         if (xdostime == -1)
@@ -366,7 +367,7 @@ public @UsesObjectEquals class ZipEntry implements ZipConstants, Cloneable {
      * @see #setLastAccessTime(FileTime)
      * @since 1.8
      */
-    public FileTime getLastAccessTime() {
+    public @Nullable FileTime getLastAccessTime() {
         return atime;
     }
 
@@ -402,7 +403,7 @@ public @UsesObjectEquals class ZipEntry implements ZipConstants, Cloneable {
      * @see #setCreationTime(FileTime)
      * @since 1.8
      */
-    public FileTime getCreationTime() {
+    public @Nullable FileTime getCreationTime() {
         return ctime;
     }
 

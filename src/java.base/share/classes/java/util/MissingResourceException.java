@@ -40,6 +40,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -59,7 +60,7 @@ public class MissingResourceException extends RuntimeException {
      * @param key the key for the missing resource.
      */
     @SideEffectFree
-    public MissingResourceException(String s, String className, String key) {
+    public MissingResourceException(@Nullable String s, String className, String key) {
         super(s);
         this.className = className;
         this.key = key;
@@ -84,7 +85,7 @@ public class MissingResourceException extends RuntimeException {
      *        or unknown.)
      */
     @SideEffectFree
-    MissingResourceException(String message, String className, String key, Throwable cause) {
+    MissingResourceException(@Nullable String message, String className, String key, @Nullable Throwable cause) {
         super(message, cause);
         this.className = className;
         this.key = key;

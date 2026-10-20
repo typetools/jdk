@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.tool;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.Set;
 
 import javax.lang.model.SourceVersion;

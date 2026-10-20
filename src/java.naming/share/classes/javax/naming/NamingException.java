@@ -26,6 +26,8 @@
 package javax.naming;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
   * This is the superclass of all exceptions thrown by
@@ -125,7 +127,8 @@ public class NamingException extends Exception {
      *                          additional detail about this exception.
      * @see java.lang.Throwable#getMessage
      */
-    public NamingException(String explanation) {
+    @SideEffectFree
+    public NamingException(@Nullable String explanation) {
         super(explanation);
         resolvedName = remainingName = null;
         resolvedObj = null;
@@ -135,6 +138,7 @@ public class NamingException extends Exception {
       * Constructs a new NamingException.
       * All fields are set to null.
       */
+    @SideEffectFree
     public NamingException() {
         super();
         resolvedName = remainingName = null;
@@ -190,7 +194,7 @@ public class NamingException extends Exception {
       *
       * @see java.lang.Throwable#getMessage
       */
-    public String getExplanation() {
+    public @Nullable String getExplanation() {
         return getMessage();
     }
 
@@ -359,6 +363,7 @@ public class NamingException extends Exception {
       * @see #initCause(Throwable)
       * @since 1.4
       */
+    @Pure
     public @Nullable Throwable getCause() {
         return getRootCause();
     }
@@ -399,6 +404,7 @@ public class NamingException extends Exception {
      * @return The non-null string containing the string representation
      * of this exception.
      */
+    @SideEffectFree
     public String toString() {
         String answer = super.toString();
 

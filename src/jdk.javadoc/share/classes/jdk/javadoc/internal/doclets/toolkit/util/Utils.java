@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.doclets.toolkit.util;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.annotation.Documented;
 import java.lang.ref.SoftReference;
 import java.net.URI;
@@ -1456,6 +1457,7 @@ public class Utils {
             return keys.computeIfAbsent(s, instance :: getCollationKey);
         }
 
+        @Pure
         public int compare(String s1, String s2) {
             return getKey(s1).compareTo(getKey(s2));
         }

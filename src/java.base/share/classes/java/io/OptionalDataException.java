@@ -24,6 +24,7 @@
  */
 package java.io;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -55,6 +56,7 @@ public class OptionalDataException extends ObjectStreamException {
     /*
      * Create an {@code OptionalDataException} with a length.
      */
+    @SideEffectFree
     OptionalDataException(int len) {
         eof = false;
         length = len;
@@ -64,6 +66,7 @@ public class OptionalDataException extends ObjectStreamException {
      * Create an {@code OptionalDataException} signifying no
      * more primitive data is available.
      */
+    @SideEffectFree
     OptionalDataException(boolean end) {
         length = 0;
         eof = end;

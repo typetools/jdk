@@ -24,6 +24,8 @@
  */
 package java.util.stream;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -123,12 +125,12 @@ final class Streams {
         }
 
         @Override
-        public Comparator<? super Integer> getComparator() {
+        public @Nullable Comparator<? super Integer> getComparator() {
             return null;
         }
 
         @Override
-        public Spliterator.OfInt trySplit() {
+        public Spliterator.@Nullable OfInt trySplit() {
             long size = estimateSize();
             return size <= 1
                    ? null
@@ -246,12 +248,12 @@ final class Streams {
         }
 
         @Override
-        public Comparator<? super Long> getComparator() {
+        public @Nullable Comparator<? super Long> getComparator() {
             return null;
         }
 
         @Override
-        public Spliterator.OfLong trySplit() {
+        public Spliterator.@Nullable OfLong trySplit() {
             long size = estimateSize();
             return size <= 1
                    ? null
@@ -302,7 +304,7 @@ final class Streams {
         // count == -2 for one element held by first
 
         @Override
-        public S trySplit() {
+        public @Nullable S trySplit() {
             return null;
         }
 
@@ -706,7 +708,7 @@ final class Streams {
         }
 
         @Override
-        public T_SPLITR trySplit() {
+        public @Nullable T_SPLITR trySplit() {
             @SuppressWarnings("unchecked")
             T_SPLITR ret = beforeSplit ? aSpliterator : (T_SPLITR) bSpliterator.trySplit();
             beforeSplit = false;
@@ -762,7 +764,7 @@ final class Streams {
         }
 
         @Override
-        public Comparator<? super T> getComparator() {
+        public @Nullable Comparator<? super T> getComparator() {
             if (beforeSplit)
                 throw new IllegalStateException();
             return bSpliterator.getComparator();

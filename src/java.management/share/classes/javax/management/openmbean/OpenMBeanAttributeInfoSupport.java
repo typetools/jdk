@@ -32,7 +32,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -572,6 +571,7 @@ public class OpenMBeanAttributeInfoSupport
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
+    @Pure
     static int compare(Object x, Object y) {
         return ((Comparable) x).compareTo(y);
     }

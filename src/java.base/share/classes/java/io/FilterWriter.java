@@ -30,7 +30,6 @@ import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 /**
  * Abstract class for writing filtered character streams.
  * The abstract class {@code FilterWriter} itself

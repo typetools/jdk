@@ -25,6 +25,7 @@
 
 package java.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -56,7 +57,7 @@ public class InputMismatchException extends NoSuchElementException {
      * @param   s   the detail message.
      */
     @SideEffectFree
-    public InputMismatchException(String s) {
+    public InputMismatchException(@Nullable String s) {
         super(s);
     }
 }

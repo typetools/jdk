@@ -314,6 +314,7 @@ public class CompoundName implements Name {
      * @throws ClassCastException if obj is not a CompoundName.
      * @see #equals(java.lang.Object)
      */
+    @Pure
     public int compareTo(Object obj) {
         if (!(obj instanceof CompoundName)) {
             throw new ClassCastException("Not a CompoundName");

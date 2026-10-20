@@ -9,6 +9,7 @@
 package jdk.internal.org.jline.utils;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.ArrayList;
 import java.util.List;
 

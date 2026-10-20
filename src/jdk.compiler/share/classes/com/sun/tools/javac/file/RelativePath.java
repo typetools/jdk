@@ -73,6 +73,7 @@ public abstract class RelativePath implements Comparable<RelativePath> {
     }
 
     @Override
+    @Pure
     public int compareTo(RelativePath other) {
         return path.compareTo(other.path);
     }

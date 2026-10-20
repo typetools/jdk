@@ -191,6 +191,7 @@ public interface GSSName {
      *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
      *         {@link GSSException#FAILURE GSSException.FAILURE}
      */
+    @Pure
     boolean equals(GSSName another) throws GSSException;
 
     /**

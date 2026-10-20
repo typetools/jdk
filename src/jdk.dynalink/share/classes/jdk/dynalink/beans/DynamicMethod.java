@@ -61,6 +61,7 @@
 package jdk.dynalink.beans;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.invoke.MethodHandle;
 import jdk.dynalink.CallSiteDescriptor;
 import jdk.dynalink.linker.LinkerServices;

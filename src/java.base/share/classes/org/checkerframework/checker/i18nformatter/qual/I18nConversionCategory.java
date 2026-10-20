@@ -5,11 +5,12 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringJoiner;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
- * Elements of this enumeration are used in a {@link I18nFormat} annotation to indicate the valid
+ * Elements of this enumeration are used in an {@link I18nFormat} annotation to indicate the valid
  * types that may be passed as a format parameter. For example:
  *
  * <pre>{@literal @}I18nFormat({GENERAL, NUMBER}) String f = "{0}{1, number}";
@@ -67,7 +68,7 @@ public enum I18nConversionCategory {
   private static final I18nConversionCategory[] namedCategories = {DATE, NUMBER};
 
   /**
-   * Creates a conversion cagetogry from a string name.
+   * Creates a conversion category from a string name.
    *
    * <pre>
    * I18nConversionCategory.stringToI18nConversionCategory("number") == I18nConversionCategory.NUMBER;
@@ -96,7 +97,7 @@ public enum I18nConversionCategory {
    * @param <E> the type of array and set elements
    * @return a set containing the array's elements
    */
-  private static <E> Set<E> arrayToSet(E[] a) {
+  private static <E> @Modifiable Set<E> arrayToSet(E[] a) {
     return new HashSet<>(Arrays.asList(a));
   }
 
@@ -159,7 +160,7 @@ public enum I18nConversionCategory {
    * Returns the union of the two given I18nConversionCategories.
    *
    * <pre>
-   * I18nConversionCategory.intersect(DATE, NUMBER) == DATE;
+   * I18nConversionCategory.union(DATE, NUMBER) == DATE;
    * </pre>
    */
   public static I18nConversionCategory union(I18nConversionCategory a, I18nConversionCategory b) {
@@ -196,7 +197,7 @@ public enum I18nConversionCategory {
     return false;
   }
 
-  /** Returns a pretty printed {@link I18nConversionCategory}. */
+  /** Returns a pretty-printed {@link I18nConversionCategory}. */
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(this.name());

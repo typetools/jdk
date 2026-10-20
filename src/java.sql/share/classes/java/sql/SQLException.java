@@ -27,6 +27,7 @@ package java.sql;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -71,6 +72,7 @@ public class SQLException extends java.lang.Exception
      * @param SQLState an XOPEN or SQL:2003 code identifying the exception
      * @param vendorCode a database vendor-specific exception code
      */
+    @SideEffectFree
     public SQLException(@Nullable String reason, @Nullable String SQLState, int vendorCode) {
         super(reason);
         this.SQLState = SQLState;
@@ -97,6 +99,7 @@ public class SQLException extends java.lang.Exception
      * @param reason a description of the exception
      * @param SQLState an XOPEN or SQL:2003 code identifying the exception
      */
+    @SideEffectFree
     public SQLException(@Nullable String reason, @Nullable String SQLState) {
         super(reason);
         this.SQLState = SQLState;
@@ -120,6 +123,7 @@ public class SQLException extends java.lang.Exception
      *
      * @param reason a description of the exception
      */
+    @SideEffectFree
     public SQLException(@Nullable String reason) {
         super(reason);
         this.SQLState = null;
@@ -141,6 +145,7 @@ public class SQLException extends java.lang.Exception
      * {@link Throwable#initCause(java.lang.Throwable)} method.
      *
      */
+    @SideEffectFree
     public SQLException() {
         super();
         this.SQLState = null;
@@ -166,6 +171,7 @@ public class SQLException extends java.lang.Exception
      * may be null indicating the cause is non-existent or unknown.
      * @since 1.6
      */
+    @SideEffectFree
     public SQLException(@Nullable Throwable cause) {
         super(cause);
 
@@ -188,6 +194,7 @@ public class SQLException extends java.lang.Exception
      * may be null indicating the cause is non-existent or unknown.
      * @since 1.6
      */
+    @SideEffectFree
     public SQLException(@Nullable String reason, @Nullable Throwable cause) {
         super(reason,cause);
 
@@ -211,6 +218,7 @@ public class SQLException extends java.lang.Exception
      *     the cause is non-existent or unknown.
      * @since 1.6
      */
+    @SideEffectFree
     public SQLException(@Nullable String reason, @Nullable String sqlState, @Nullable Throwable cause) {
         super(reason,cause);
 
@@ -237,6 +245,7 @@ public class SQLException extends java.lang.Exception
      * may be null indicating the cause is non-existent or unknown.
      * @since 1.6
      */
+    @SideEffectFree
     public SQLException(@Nullable String reason, @Nullable String sqlState, int vendorCode, @Nullable Throwable cause) {
         super(reason,cause);
 

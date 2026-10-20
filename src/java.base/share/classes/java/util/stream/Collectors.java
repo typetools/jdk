@@ -1991,7 +1991,7 @@ public final class Collectors {
         }
 
         @Override
-        public T get(Object key) {
+        public @Nullable T get(Object key) {
             if (key instanceof Boolean b) {
                 return b ? forTrue : forFalse;
             } else {

@@ -1540,6 +1540,7 @@ public final class LocalTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(LocalTime other) {
         int cmp = Integer.compare(hour, other.hour);
         if (cmp == 0) {
@@ -1562,6 +1563,7 @@ public final class LocalTime
      * @param other  the other time to compare to, not null
      * @return true if this is after the specified time
      */
+    @Pure
     public boolean isAfter(LocalTime other) {
         return compareTo(other) > 0;
     }
@@ -1574,6 +1576,7 @@ public final class LocalTime
      * @param other  the other time to compare to, not null
      * @return true if this point is before the specified time
      */
+    @Pure
     public boolean isBefore(LocalTime other) {
         return compareTo(other) < 0;
     }

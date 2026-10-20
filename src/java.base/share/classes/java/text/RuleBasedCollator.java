@@ -358,6 +358,7 @@ public class RuleBasedCollator extends Collator{
      *
      * @throws    NullPointerException if {@code source} or {@code target} is null.
      */
+    @Pure
     public synchronized int compare(String source, String target)
     {
         if (source == null || target == null) {

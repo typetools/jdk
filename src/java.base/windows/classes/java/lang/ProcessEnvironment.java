@@ -63,8 +63,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.*;
 
@@ -128,7 +129,8 @@ final class ProcessEnvironment extends HashMap<String,String>
             return e.setValue(validateValue(value));
         }
         public String toString() { return getKey() + "=" + getValue();}
-        public boolean equals(Object o) {return e.equals(o);}
+        @Pure
+        public boolean equals(@Nullable Object o) {return e.equals(o);}
         public int hashCode()    {return e.hashCode();}
     }
 
@@ -145,7 +147,7 @@ final class ProcessEnvironment extends HashMap<String,String>
                 Iterator<Map.Entry<String,String>> i = s.iterator();
                 @Pure
                 public boolean hasNext() { return i.hasNext();}
-                // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 public Map.Entry<String,String> next() {
                     return new CheckedEntry(i.next());
                 }
@@ -203,6 +205,7 @@ final class ProcessEnvironment extends HashMap<String,String>
 
     private static final class NameComparator
         implements Comparator<String> {
+        @Pure
         public int compare(String s1, String s2) {
             // We can't use String.compareToIgnoreCase since it
             // canonicalizes to lower case, while Windows
@@ -228,6 +231,7 @@ final class ProcessEnvironment extends HashMap<String,String>
 
     private static final class EntryComparator
         implements Comparator<Map.Entry<String,String>> {
+        @Pure
         public int compare(Map.Entry<String,String> e1,
                            Map.Entry<String,String> e2) {
             return nameComparator.compare(e1.getKey(), e2.getKey());

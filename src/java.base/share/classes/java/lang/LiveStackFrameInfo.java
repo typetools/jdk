@@ -24,6 +24,8 @@
  */
 package java.lang;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 final class LiveStackFrameInfo extends StackFrameInfo implements LiveStackFrame {
     private static Object[] EMPTY_ARRAY = new Object[0];
 
@@ -92,6 +94,7 @@ final class LiveStackFrameInfo extends StackFrameInfo implements LiveStackFrame 
         }
 
         @Override
+        @Pure
         public int size() {
             return 4;
         }
@@ -114,6 +117,7 @@ final class LiveStackFrameInfo extends StackFrameInfo implements LiveStackFrame 
         }
 
         @Override
+        @Pure
         public int size() {
             return 8;
         }

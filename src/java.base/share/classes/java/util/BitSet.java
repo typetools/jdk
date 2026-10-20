@@ -549,7 +549,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * @throws IndexOutOfBoundsException if the specified index is negative
      * @since  1.0
      */
-    @SideEffectsOnly("#1")
+    @SideEffectsOnly("this")
     public void clear(@GuardSatisfied BitSet this, @NonNegative int bitIndex) {
         if (bitIndex < 0)
             throw new IndexOutOfBoundsException("bitIndex < 0: " + bitIndex);
@@ -575,7 +575,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      *         larger than {@code toIndex}
      * @since  1.4
      */
-    @SideEffectsOnly("#1")
+    @SideEffectsOnly("this")
     public void clear(@GuardSatisfied BitSet this, @NonNegative int fromIndex, @NonNegative int toIndex) {
         checkRange(fromIndex, toIndex);
 
@@ -619,7 +619,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      *
      * @since 1.4
      */
-    @SideEffectsOnly("#1")
+    @SideEffectsOnly("this")
     public void clear(@GuardSatisfied BitSet this) {
         while (wordsInUse > 0)
             words[--wordsInUse] = 0;
@@ -1345,7 +1345,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             }
 
             @Override
-            public OfInt trySplit() {
+            public @Nullable OfInt trySplit() {
                 int hi = getFence();
                 int lo = index;
                 if (lo < 0) {
@@ -1390,7 +1390,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             }
 
             @Override
-            public Comparator<? super Integer> getComparator() {
+            public @Nullable Comparator<? super Integer> getComparator() {
                 return null;
             }
         }

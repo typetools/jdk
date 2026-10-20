@@ -26,6 +26,7 @@
 package java.sql;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -98,6 +99,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException( @Nullable String reason, @Nullable String SQLState, int vendorCode,
                                int @Nullable [] updateCounts ) {
       super(reason, SQLState, vendorCode);
@@ -133,6 +135,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException(@Nullable String reason, @Nullable String SQLState,
                               int @Nullable [] updateCounts) {
       this(reason, SQLState, 0, updateCounts);
@@ -165,6 +168,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public  BatchUpdateException(@Nullable String reason, int @Nullable [] updateCounts) {
       this(reason, null, 0, updateCounts);
   }
@@ -194,6 +198,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException(int @Nullable [] updateCounts) {
       this(null, null, 0, updateCounts);
   }
@@ -210,6 +215,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException() {
         this(null, null, 0, null);
   }
@@ -230,6 +236,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException(@Nullable Throwable cause) {
       this((cause == null ? null : cause.toString()), null, 0, (int[])null, cause);
   }
@@ -263,6 +270,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException(int @Nullable []updateCounts , @Nullable Throwable cause) {
       this((cause == null ? null : cause.toString()), null, 0, updateCounts, cause);
   }
@@ -294,6 +302,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException(@Nullable String reason, int @Nullable []updateCounts, @Nullable Throwable cause) {
       this(reason, null, 0, updateCounts, cause);
   }
@@ -327,6 +336,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException(@Nullable String reason, @Nullable String SQLState,
           int @Nullable []updateCounts, @Nullable Throwable cause) {
       this(reason, SQLState, 0, updateCounts, cause);
@@ -362,6 +372,7 @@ public class BatchUpdateException extends SQLException {
    * @see #BatchUpdateException(java.lang.String, java.lang.String, int, long[],
    * java.lang.Throwable)
    */
+  @SideEffectFree
   public BatchUpdateException(@Nullable String reason, @Nullable String SQLState, int vendorCode,
                                 int @Nullable []updateCounts,@Nullable Throwable cause) {
         super(reason, SQLState, vendorCode, cause);
@@ -429,6 +440,7 @@ public class BatchUpdateException extends SQLException {
    * may be null indicating the cause is non-existent or unknown.
    * @since 1.8
    */
+  @SideEffectFree
   public BatchUpdateException(@Nullable String reason, @Nullable String SQLState, int vendorCode,
           long @Nullable []updateCounts,@Nullable Throwable cause) {
       super(reason, SQLState, vendorCode, cause);

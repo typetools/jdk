@@ -26,6 +26,7 @@
 package java.lang;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -44,6 +45,7 @@ public class NumberFormatException extends IllegalArgumentException {
     /**
      * Constructs a {@code NumberFormatException} with no detail message.
      */
+    @SideEffectFree
     public NumberFormatException () {
         super();
     }
@@ -54,6 +56,7 @@ public class NumberFormatException extends IllegalArgumentException {
      *
      * @param   s   the detail message.
      */
+    @SideEffectFree
     public NumberFormatException (@Nullable String s) {
         super (s);
     }

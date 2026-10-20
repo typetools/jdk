@@ -26,6 +26,8 @@
 package javax.xml.transform;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
@@ -51,7 +53,7 @@ public class TransformerException extends Exception {
 
     /** Field locator specifies where the error occurred */
     @SuppressWarnings("serial") // Type of field is not Serializable
-    SourceLocator locator;
+    @Nullable SourceLocator locator;
 
     /**
      * Method getLocator retrieves an instance of a SourceLocator
@@ -59,7 +61,7 @@ public class TransformerException extends Exception {
      *
      * @return A SourceLocator object, or null if none was specified.
      */
-    public SourceLocator getLocator() {
+    public @Nullable SourceLocator getLocator() {
         return this.locator;
     }
 
@@ -69,12 +71,12 @@ public class TransformerException extends Exception {
      *
      * @param location A SourceLocator object, or null to clear the location.
      */
-    public void setLocator(SourceLocator location) {
+    public void setLocator(@Nullable SourceLocator location) {
         this.locator = location;
     }
 
     /** Field containedException specifies a wrapped exception.  May be null. */
-    Throwable containedException;
+    @Nullable Throwable containedException;
 
     /**
      * This method retrieves an exception that this exception wraps.
@@ -82,7 +84,7 @@ public class TransformerException extends Exception {
      * @return An Throwable object, or null.
      * @see #getCause
      */
-    public Throwable getException() {
+    public @Nullable Throwable getException() {
         return containedException;
     }
 
@@ -92,6 +94,7 @@ public class TransformerException extends Exception {
      * caused this throwable to get thrown.)
      * @return the cause, or null if unknown
      */
+    @Pure
     @Override
     public @Nullable Throwable getCause() {
 
@@ -152,7 +155,8 @@ public class TransformerException extends Exception {
      *
      * @param message The error or warning message.
      */
-    public TransformerException(String message) {
+    @SideEffectFree
+    public TransformerException(@Nullable String message) {
         this(message, null, null);
     }
 
@@ -161,7 +165,8 @@ public class TransformerException extends Exception {
      *
      * @param e The exception to be wrapped.
      */
-    public TransformerException(Throwable e) {
+    @SideEffectFree
+    public TransformerException(@Nullable Throwable e) {
         this(null, null, e);
     }
 
@@ -175,7 +180,8 @@ public class TransformerException extends Exception {
      *                use the message from the embedded exception.
      * @param e Any exception
      */
-    public TransformerException(String message, Throwable e) {
+    @SideEffectFree
+    public TransformerException(@Nullable String message, @Nullable Throwable e) {
         this(message, null, e);
     }
 
@@ -189,7 +195,8 @@ public class TransformerException extends Exception {
      * @param message The error or warning message.
      * @param locator The locator object for the error or warning.
      */
-    public TransformerException(String message, SourceLocator locator) {
+    @SideEffectFree
+    public TransformerException(@Nullable String message, @Nullable SourceLocator locator) {
         this(message, locator, null);
     }
 
@@ -201,8 +208,9 @@ public class TransformerException extends Exception {
      * @param locator The locator object for the error or warning.
      * @param e Any exception
      */
-    public TransformerException(String message, SourceLocator locator,
-                                Throwable e) {
+    @SideEffectFree
+    public TransformerException(@Nullable String message, @Nullable SourceLocator locator,
+                                @Nullable Throwable e) {
         super(((message == null) || (message.length() == 0))
               ? ((e == null) ? "" : e.toString())
               : message);
@@ -233,7 +241,7 @@ public class TransformerException extends Exception {
      * if there is no location information.
      */
     @SuppressWarnings("removal")
-    public String getLocationAsString() {
+    public @Nullable String getLocationAsString() {
         if (locator == null) {
             return null;
         }
@@ -241,7 +249,7 @@ public class TransformerException extends Exception {
         if (System.getSecurityManager() == null) {
             return getLocationString();
         } else {
-            return AccessController.doPrivileged((PrivilegedAction<String>) () ->
+            return AccessController.doPrivileged((PrivilegedAction<@Nullable String>) () ->
                 getLocationString(),
                 new AccessControlContext(new ProtectionDomain[] {getNonPrivDomain()}));
         }
@@ -251,7 +259,7 @@ public class TransformerException extends Exception {
      * Constructs the location string.
      * @return the location string
      */
-    private String getLocationString() {
+    private @Nullable String getLocationString() {
         if (locator == null) {
             return null;
         }

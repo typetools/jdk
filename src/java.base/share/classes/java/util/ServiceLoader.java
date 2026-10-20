@@ -32,9 +32,9 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -627,7 +627,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         provider method
      */
     @SuppressWarnings("removal")
-    private Method findStaticProviderMethod(Class<?> clazz) {
+    private @Nullable Method findStaticProviderMethod(Class<?> clazz) {
         List<Method> methods = null;
         try {
             methods = LANG_ACCESS.getDeclaredPublicMethods(clazz, "provider");
@@ -841,7 +841,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
 
         @Override
         @Pure
-        public boolean equals(Object ob) {
+        public boolean equals(@Nullable Object ob) {
             return ob instanceof @SuppressWarnings("unchecked")ProviderImpl<?> that
                     && this.service == that.service
                     && this.type == that.type
@@ -860,7 +860,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
      *         factory method that returns the expected type)
      */
     @SuppressWarnings("removal")
-    private Provider<S> loadProvider(ServiceProvider provider) {
+    private @Nullable Provider<S> loadProvider(ServiceProvider provider) {
         Module module = provider.module();
         if (!module.canRead(service.getModule())) {
             // module does not read the module with the service type
@@ -1206,7 +1206,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         /**
          * Loads and returns the next provider class.
          */
-        private Class<?> nextProviderClass() {
+        private @Nullable Class<?> nextProviderClass() {
             if (configs == null) {
                 try {
                     String fullName = PREFIX + service.getName();
@@ -1510,7 +1510,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
         }
 
         @Override
-        public Spliterator<Provider<T>> trySplit() {
+        public @Nullable Spliterator<Provider<T>> trySplit() {
             return null;
         }
 
@@ -1572,7 +1572,7 @@ public final @UsesObjectEquals class ServiceLoader<S>
      * @return A new service loader
      */
     static <S> ServiceLoader<S> load(Class<S> service,
-                                     ClassLoader loader,
+                                     @Nullable ClassLoader loader,
                                      Module callerModule)
     {
         return new ServiceLoader<>(callerModule, service, loader);

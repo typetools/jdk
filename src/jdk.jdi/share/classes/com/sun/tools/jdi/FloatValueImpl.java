@@ -63,6 +63,7 @@ public class FloatValueImpl extends PrimitiveValueImpl
         return intValue();
     }
 
+    @Pure
     public int compareTo(FloatValue obj) {
         float other = obj.value();
         if (value() < other) {

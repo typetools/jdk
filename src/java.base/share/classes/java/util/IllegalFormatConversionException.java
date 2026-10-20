@@ -82,6 +82,7 @@ public non-sealed class IllegalFormatConversionException extends IllegalFormatEx
     }
 
     // javadoc inherited from Throwable.java
+    @SideEffectFree
     public String getMessage() {
         return String.format("%c != %s", c, arg.getName());
     }

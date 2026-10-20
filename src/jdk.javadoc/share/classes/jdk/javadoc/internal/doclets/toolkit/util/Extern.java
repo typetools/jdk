@@ -25,7 +25,9 @@
 
 package jdk.javadoc.internal.doclets.toolkit.util;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -401,7 +403,8 @@ public class Extern {
     private static class Fault extends Exception {
         private static final long serialVersionUID = 0;
 
-        Fault(String msg, Exception cause) {
+        @SideEffectFree
+        Fault(String msg, @Nullable Exception cause) {
             super(msg + (cause == null ? "" : " (" + cause + ")"), cause);
         }
     }

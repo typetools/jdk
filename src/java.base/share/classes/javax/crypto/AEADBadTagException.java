@@ -25,6 +25,7 @@
 
 package javax.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -54,7 +55,7 @@ public class AEADBadTagException extends BadPaddingException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public AEADBadTagException(String msg) {
+    public AEADBadTagException(@Nullable String msg) {
         super(msg);
     }
 }

@@ -25,10 +25,10 @@
 
 package java.nio.file;
 
-import java.security.BasicPermission;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.security.BasicPermission;
 
 /**
  * The {@code Permission} class for link creation operations.

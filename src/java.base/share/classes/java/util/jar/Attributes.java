@@ -35,6 +35,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
+import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.io.ByteArrayOutputStream;
@@ -46,8 +47,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import org.checkerframework.framework.qual.CFComment;
 
 import jdk.internal.misc.CDS;
 import jdk.internal.vm.annotation.Stable;
@@ -126,7 +125,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         not found.
      */
     @Pure
-    public Object get(Object name) {
+    public @Nullable Object get(@Nullable Object name) {
         return map.get(name);
     }
 
@@ -146,7 +145,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @throws IllegalArgumentException if the attribute name is invalid
      */
     @Pure
-    public String getValue(String name) {
+    public @Nullable String getValue(String name) {
         return (String)get(Name.of(name));
     }
 
@@ -164,7 +163,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         not found.
      */
     @Pure
-    public String getValue(Name name) {
+    public @Nullable String getValue(Name name) {
         return (String)get(name);
     }
 
@@ -181,7 +180,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public Object put(Object name, Object value) {
+    public @Nullable Object put(Object name, Object value) {
         return map.put((Attributes.Name)name, (String)value);
     }
 
@@ -201,7 +200,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the previous value of the attribute, or null if none
      * @throws    IllegalArgumentException if the attribute name is invalid
      */
-    public String putValue(String name, String value) {
+    public @Nullable String putValue(String name, String value) {
         return (String)put(Name.of(name), value);
     }
 
@@ -214,7 +213,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
+    public @Nullable Object remove(@GuardSatisfied @Nullable @UnknownSignedness Object name) {
         return map.remove(name);
     }
 
@@ -559,7 +558,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          *         specified attribute object
          */
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (this == o) {
                 return true;
             }

@@ -28,6 +28,7 @@ package com.sun.tools.javac.tree;
 
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.*;

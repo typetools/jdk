@@ -31,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 import java.util.Enumeration;
 import java.util.Vector;
 import java.util.Locale;
@@ -154,6 +153,7 @@ public final class LdapName implements Name {
                 (compareTo(obj) == 0));
     }
 
+    @Pure
     public int compareTo(Object obj) {
         LdapName that = (LdapName)obj;
 
@@ -636,12 +636,14 @@ public final class LdapName implements Name {
             return new String(buf);
         }
 
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             return ((obj instanceof Rdn) &&
                     (compareTo(obj) == 0));
         }
 
         // Compare TypeAndValue components one by one, lexicographically.
+        @Pure
         public int compareTo(Object obj) {
             Rdn that = (Rdn)obj;
             int minSize = Math.min(tvs.size(), that.tvs.size());
@@ -711,6 +713,7 @@ public final class LdapName implements Name {
             return (type + "=" + value);
         }
 
+        @Pure
         public int compareTo(Object obj) {
             // NB: Any change here affecting equality must be
             //     reflected in hashCode().
@@ -727,7 +730,8 @@ public final class LdapName implements Name {
             return getValueComparable().compareTo(that.getValueComparable());
         }
 
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             // NB:  Any change here must be reflected in hashCode().
             if (!(obj instanceof TypeAndValue)) {
                 return false;
@@ -767,6 +771,7 @@ public final class LdapName implements Name {
          * If "value" is binary, it is returned in uppercase but
          * otherwise unmodified.
          */
+        @Pure
         private String getValueComparable() {
             if (comparable != null) {
                 return comparable;      // return cached result

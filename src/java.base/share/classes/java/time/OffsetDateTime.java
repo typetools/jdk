@@ -1810,6 +1810,7 @@ public final class OffsetDateTime
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(OffsetDateTime other) {
         int cmp = compareInstant(this, other);
         if (cmp == 0) {
@@ -1829,6 +1830,7 @@ public final class OffsetDateTime
      * @param other  the other date-time to compare to, not null
      * @return true if this is after the instant of the specified date-time
      */
+    @Pure
     public boolean isAfter(OffsetDateTime other) {
         long thisEpochSec = toEpochSecond();
         long otherEpochSec = other.toEpochSecond();
@@ -1846,6 +1848,7 @@ public final class OffsetDateTime
      * @param other  the other date-time to compare to, not null
      * @return true if this is before the instant of the specified date-time
      */
+    @Pure
     public boolean isBefore(OffsetDateTime other) {
         long thisEpochSec = toEpochSecond();
         long otherEpochSec = other.toEpochSecond();
@@ -1863,6 +1866,7 @@ public final class OffsetDateTime
      * @param other  the other date-time to compare to, not null
      * @return true if the instant equals the instant of the specified date-time
      */
+    @Pure
     public boolean isEqual(OffsetDateTime other) {
         return toEpochSecond() == other.toEpochSecond() &&
                 toLocalTime().getNano() == other.toLocalTime().getNano();

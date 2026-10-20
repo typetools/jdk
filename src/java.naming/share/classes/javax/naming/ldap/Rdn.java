@@ -325,6 +325,7 @@ public class Rdn implements Serializable, Comparable<Object> {
      *          is less than, equal to, or greater than the given Object.
      * @throws ClassCastException if obj is null or not a Rdn.
      */
+    @Pure
     public int compareTo(Object obj) {
         if (!(obj instanceof Rdn)) {
             throw new ClassCastException("The obj is not a Rdn");
@@ -444,6 +445,7 @@ public class Rdn implements Serializable, Comparable<Object> {
             return value;
         }
 
+        @Pure
         public int compareTo(RdnEntry that) {
             int diff = type.compareToIgnoreCase(that.type);
             if (diff != 0) {
@@ -456,7 +458,8 @@ public class Rdn implements Serializable, Comparable<Object> {
                         that.getValueComparable());
         }
 
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             if (obj == this) {
                 return true;
             }

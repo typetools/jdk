@@ -26,8 +26,8 @@
 package javax.swing.tree;
 
 import org.checkerframework.checker.interning.qual.Interned;
-import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.awt.Color;
 import java.awt.Component;

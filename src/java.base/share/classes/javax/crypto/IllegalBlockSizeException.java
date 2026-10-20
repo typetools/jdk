@@ -25,6 +25,7 @@
 
 package javax.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -59,7 +60,7 @@ public class IllegalBlockSizeException
      * @param msg the detail message.
      */
     @SideEffectFree
-    public IllegalBlockSizeException(String msg) {
+    public IllegalBlockSizeException(@Nullable String msg) {
         super(msg);
     }
 }

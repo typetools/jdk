@@ -1428,6 +1428,7 @@ public final class Duration
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(Duration otherDuration) {
         int cmp = Long.compare(seconds, otherDuration.seconds);
         if (cmp != 0) {

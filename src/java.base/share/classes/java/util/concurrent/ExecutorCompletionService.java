@@ -36,6 +36,7 @@
 package java.util.concurrent;
 
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -206,11 +207,11 @@ public @UsesObjectEquals class ExecutorCompletionService<V> implements Completio
         return completionQueue.take();
     }
 
-    public Future<V> poll() {
+    public @Nullable Future<V> poll() {
         return completionQueue.poll();
     }
 
-    public Future<V> poll(long timeout, TimeUnit unit)
+    public @Nullable Future<V> poll(long timeout, TimeUnit unit)
             throws InterruptedException {
         return completionQueue.poll(timeout, unit);
     }

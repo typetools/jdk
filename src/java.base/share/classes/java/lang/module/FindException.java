@@ -25,6 +25,7 @@
 
 package java.lang.module;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -56,7 +57,7 @@ public class FindException extends RuntimeException {
      *        The detail message; can be {@code null}
      */
     @SideEffectFree
-    public FindException(String msg) {
+    public FindException(@Nullable String msg) {
         super(msg);
     }
 
@@ -67,7 +68,7 @@ public class FindException extends RuntimeException {
      *        The cause; can be {@code null}
      */
     @SideEffectFree
-    public FindException(Throwable cause) {
+    public FindException(@Nullable Throwable cause) {
         super(cause);
     }
 
@@ -81,7 +82,7 @@ public class FindException extends RuntimeException {
      *        The cause; can be {@code null}
      */
     @SideEffectFree
-    public FindException(String msg, Throwable cause) {
+    public FindException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

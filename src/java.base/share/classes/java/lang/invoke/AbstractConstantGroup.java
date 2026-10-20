@@ -28,8 +28,8 @@ package java.lang.invoke;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.*;
 import jdk.internal.vm.annotation.Stable;
@@ -47,7 +47,9 @@ abstract class AbstractConstantGroup implements ConstantGroup {
         this.size = size;
     }
 
-    @Override public final int size() {
+    @Override
+    @Pure
+    public final int size() {
         return size;
     }
 

@@ -919,6 +919,7 @@ public class Date
      *          {@code false} otherwise.
      * @throws    NullPointerException if {@code when} is null.
      */
+    @Pure
     public boolean before(@GuardSatisfied Date this, Date when) {
         return getMillisOf(this) < getMillisOf(when);
     }
@@ -933,6 +934,7 @@ public class Date
      *          {@code false} otherwise.
      * @throws    NullPointerException if {@code when} is null.
      */
+    @Pure
     public boolean after(@GuardSatisfied Date this, Date when) {
         return getMillisOf(this) > getMillisOf(when);
     }

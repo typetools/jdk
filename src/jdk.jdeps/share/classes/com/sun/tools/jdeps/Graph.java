@@ -24,7 +24,9 @@
  */
 package com.sun.tools.jdeps;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -237,7 +239,8 @@ public final class Graph<T> {
         }
 
         @Override
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             if (this == o) return true;
             if (o == null || !(o instanceof Edge))
                 return false;

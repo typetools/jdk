@@ -26,6 +26,7 @@
 
 package javax.security.cert;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -66,7 +67,7 @@ public class CertificateEncodingException extends CertificateException {
      * @param message the detail message.
      */
     @SideEffectFree
-    public CertificateEncodingException(String message) {
+    public CertificateEncodingException(@Nullable String message) {
         super(message);
     }
 }

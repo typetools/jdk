@@ -22,6 +22,7 @@
  */
 
 import java.util.*;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * A complete Deque implementation that inherits the reversed() method
@@ -178,6 +179,7 @@ public class SimpleDeque<E> implements Deque<E> {
         return deque.poll();
     }
 
+    @SideEffectFree
     public E element() {
         return deque.element();
     }

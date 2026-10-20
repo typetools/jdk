@@ -63,6 +63,7 @@ public class FieldImpl extends TypeComponentImpl
         return Long.hashCode(ref());
     }
 
+    @Pure
     public int compareTo(Field field) {
         ReferenceTypeImpl declaringType = (ReferenceTypeImpl)declaringType();
         int rc = declaringType.compareTo(field.declaringType());

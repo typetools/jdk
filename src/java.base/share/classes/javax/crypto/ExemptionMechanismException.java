@@ -25,7 +25,9 @@
 
 package javax.crypto;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.security.GeneralSecurityException;
 
 /**
@@ -57,7 +59,7 @@ public class ExemptionMechanismException extends GeneralSecurityException {
      * @param msg the detailed message.
      */
     @SideEffectFree
-   public ExemptionMechanismException(String msg) {
+   public ExemptionMechanismException(@Nullable String msg) {
        super(msg);
     }
 }

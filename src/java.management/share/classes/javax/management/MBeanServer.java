@@ -25,11 +25,10 @@
 
 package javax.management;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
-
 // java import
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Set;
 import java.io.ObjectInputStream;

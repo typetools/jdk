@@ -364,7 +364,7 @@ public class Manifest implements Cloneable {
         }
     }
 
-    private String parseName(byte[] lbuf, int len) {
+    private @Nullable String parseName(byte[] lbuf, int len) {
         if (toLower(lbuf[0]) == 'n' && toLower(lbuf[1]) == 'a' &&
             toLower(lbuf[2]) == 'm' && toLower(lbuf[3]) == 'e' &&
             lbuf[4] == ':' && lbuf[5] == ' ') {

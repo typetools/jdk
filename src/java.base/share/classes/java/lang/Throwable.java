@@ -412,7 +412,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      * @return  The localized description of this throwable.
      * @since   1.1
      */
-    @SideEffectFree
+    @Pure
     public @Nullable String getLocalizedMessage(@GuardSatisfied Throwable this) {
         return getMessage();
     }
@@ -874,6 +874,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *         pertaining to this throwable.
      * @since  1.4
      */
+    @SideEffectFree
     public StackTraceElement[] getStackTrace() {
         return getOurStackTrace().clone();
     }
@@ -1148,6 +1149,7 @@ public @UsesObjectEquals class Throwable implements Serializable {
      *         suppressed to deliver this exception.
      * @since 1.7
      */
+    @SideEffectFree
     public final synchronized Throwable[] getSuppressed() {
         if (suppressedExceptions == SUPPRESSED_SENTINEL ||
             suppressedExceptions == null)

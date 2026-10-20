@@ -26,7 +26,9 @@
 package javax.crypto;
 
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -634,7 +636,8 @@ final class CryptoPolicyParser {
             return retval;
         }
 
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             if (obj == this)
                 return true;
 
@@ -678,14 +681,17 @@ final class CryptoPolicyParser {
          * detail message.
          * @param msg the detail message.
          */
-        ParsingException(String msg) {
+        @SideEffectFree
+        ParsingException(@Nullable String msg) {
             super(msg);
         }
 
+        @SideEffectFree
         ParsingException(int line, String msg) {
             super("line " + line + ": " + msg);
         }
 
+        @SideEffectFree
         ParsingException(int line, String expect, String actual) {
             super("line "+line+": expected '"+expect+"', found '"+actual+"'");
         }

@@ -37,6 +37,10 @@ package java.util.concurrent;
 
 import org.checkerframework.checker.index.qual.PolyGrowShrink;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmpty;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
@@ -50,6 +54,7 @@ import org.checkerframework.checker.signedness.qual.UnknownSignedness;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
 
 import java.util.AbstractSet;
@@ -112,6 +117,7 @@ import java.util.function.Predicate;
  * @author Doug Lea
  * @param <E> the type of elements held in this set
  */
+@AnnotatedFor({"nullness", "modifiability"})
 public class CopyOnWriteArraySet<E> extends AbstractSet<E>
         implements java.io.Serializable {
     private static final long serialVersionUID = 5457747651344034263L;
@@ -121,7 +127,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
     /**
      * Creates an empty set.
      */
-    public CopyOnWriteArraySet() {
+    public @Modifiable CopyOnWriteArraySet() {
         al = new CopyOnWriteArrayList<E>();
     }
 
@@ -132,7 +138,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @param c the collection of elements to initially contain
      * @throws NullPointerException if the specified collection is null
      */
-    public CopyOnWriteArraySet(Collection<? extends E> c) {
+    public @Modifiable CopyOnWriteArraySet(Collection<? extends E> c) {
         if (c.getClass() == CopyOnWriteArraySet.class) {
             @SuppressWarnings("unchecked") CopyOnWriteArraySet<E> cc =
                 (CopyOnWriteArraySet<E>)c;
@@ -251,7 +257,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public void clear() {
+    public void clear(@Shrinkable CopyOnWriteArraySet<E> this) {
         al.clear();
     }
 
@@ -268,7 +274,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean remove(@GuardSatisfied @Nullable @UnknownSignedness Object o) {
+    public boolean remove(@Shrinkable CopyOnWriteArraySet<E> this, @GuardSatisfied @Nullable @UnknownSignedness Object o) {
         return al.remove(o);
     }
 
@@ -287,7 +293,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
     @EnsuresNonEmpty("this")
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean add(E e) {
+    public boolean add(@Growable CopyOnWriteArraySet<E> this, E e) {
         return al.addIfAbsent(e);
     }
 
@@ -359,7 +365,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean addAll(Collection<? extends E> c) {
+    public boolean addAll(@Growable CopyOnWriteArraySet<E> this, Collection<? extends E> c) {
         return al.addAllAbsent(c) > 0;
     }
 
@@ -382,7 +388,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean removeAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean removeAll(@Shrinkable CopyOnWriteArraySet<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         return al.removeAll(c);
     }
 
@@ -407,7 +413,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean retainAll(Collection<? extends @NonNull @UnknownSignedness Object> c) {
+    public boolean retainAll(@Shrinkable CopyOnWriteArraySet<E> this, Collection<? extends @NonNull @UnknownSignedness Object> c) {
         return al.retainAll(c);
     }
 
@@ -423,7 +429,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @return an iterator over the elements in this set
      */
     @SideEffectFree
-    public @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArraySet<E> this) {
+    public @Unmodifiable @PolyGrowShrink @PolyNonEmpty Iterator<E> iterator(@PolyGrowShrink @PolyNonEmpty CopyOnWriteArraySet<E> this) {
         return al.iterator();
     }
 
@@ -456,7 +462,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      */
     @SideEffectsOnly("this")
     @DoesNotUnrefineReceiver("modifiability")
-    public boolean removeIf(Predicate<? super E> filter) {
+    public boolean removeIf(@Shrinkable CopyOnWriteArraySet<E> this, Predicate<? super E> filter) {
         return al.removeIf(filter);
     }
 

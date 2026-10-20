@@ -26,6 +26,7 @@
 package com.sun.tools.javac.code;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.Locale;

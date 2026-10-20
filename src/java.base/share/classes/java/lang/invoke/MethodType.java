@@ -913,6 +913,7 @@ class MethodType
         return false;
     }
 
+    @Pure
     private boolean equals(MethodType that) {
         return this.rtype == that.rtype
             && Arrays.equals(this.ptypes, that.ptypes);
@@ -1489,7 +1490,8 @@ s.writeObject(this.parameterArray());
              * @see Object#equals(Object)
              */
             @Override
-            public boolean equals(Object obj) {
+            @Pure
+            public boolean equals(@Nullable Object obj) {
                 Object mine = get();
                 if (obj instanceof WeakEntry) {
                     Object that = ((WeakEntry) obj).get();

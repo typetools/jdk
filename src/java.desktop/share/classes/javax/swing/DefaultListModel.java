@@ -25,6 +25,8 @@
 
 package javax.swing;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Vector;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -268,6 +270,7 @@ public class DefaultListModel<E> extends AbstractListModel<E>
      * @see #get(int)
      * @see Vector#elementAt(int)
      */
+    @SideEffectFree
     public E elementAt(int index) {
         return delegate.elementAt(index);
     }

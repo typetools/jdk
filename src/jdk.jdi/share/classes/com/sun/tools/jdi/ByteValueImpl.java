@@ -64,6 +64,7 @@ public class ByteValueImpl extends PrimitiveValueImpl
         return intValue();
     }
 
+    @Pure
     public int compareTo(ByteValue obj) {
         byte other = obj.value();
         return value() - other;

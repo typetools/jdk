@@ -69,6 +69,7 @@ public class UnmappableCharacterException
      * Returns the message.
      * @return the message
      */
+    @SideEffectFree
     public String getMessage() {
         return "Input length = " + inputLength;
     }

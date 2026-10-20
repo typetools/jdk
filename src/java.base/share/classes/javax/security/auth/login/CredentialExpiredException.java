@@ -25,6 +25,7 @@
 
 package javax.security.auth.login;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -63,7 +64,7 @@ public class CredentialExpiredException extends CredentialException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public CredentialExpiredException(String msg) {
+    public CredentialExpiredException(@Nullable String msg) {
         super(msg);
     }
 }

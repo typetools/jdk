@@ -299,6 +299,7 @@ public class ModuleDescriptor
          *         module dependence
          */
         @Override
+        @Pure
         public int compareTo(Requires that) {
             if (this == that) return 0;
 
@@ -341,7 +342,8 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
-        public boolean equals(Object ob) {
+        @Pure
+        public boolean equals(@Nullable Object ob) {
             return (ob instanceof Requires that)
                     && name.equals(that.name) && mods.equals(that.mods)
                     && Objects.equals(compiledVersion, that.compiledVersion)
@@ -525,6 +527,7 @@ public class ModuleDescriptor
          *         export dependence
          */
         @Override
+        @Pure
         public int compareTo(Exports that) {
             if (this == that) return 0;
 
@@ -582,7 +585,8 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
-        public boolean equals(Object ob) {
+        @Pure
+        public boolean equals(@Nullable Object ob) {
             return (ob instanceof Exports other)
                     && Objects.equals(this.mods, other.mods)
                     && Objects.equals(this.source, other.source)
@@ -749,6 +753,7 @@ public class ModuleDescriptor
          *         module {@code Opens}
          */
         @Override
+        @Pure
         public int compareTo(Opens that) {
             if (this == that) return 0;
 
@@ -806,7 +811,8 @@ public class ModuleDescriptor
          *          dependence that is equal to this module dependence
          */
         @Override
-        public boolean equals(Object ob) {
+        @Pure
+        public boolean equals(@Nullable Object ob) {
            return (ob instanceof Opens other)
                    && Objects.equals(this.mods, other.mods)
                    && Objects.equals(this.source, other.source)
@@ -887,6 +893,7 @@ public class ModuleDescriptor
          *         {@code Provides} is less than, equal to, or greater than
          *         the given {@code Provides}
          */
+        @Pure
         public int compareTo(Provides that) {
             if (this == that) return 0;
 
@@ -940,7 +947,8 @@ public class ModuleDescriptor
          *          {@code Provides} that is equal to this {@code Provides}
          */
         @Override
-        public boolean equals(Object ob) {
+        @Pure
+        public boolean equals(@Nullable Object ob) {
             return (ob instanceof Provides other)
                     && Objects.equals(this.service, other.service)
                     && Objects.equals(this.providers, other.providers);
@@ -1207,6 +1215,7 @@ public class ModuleDescriptor
          *         given module version
          */
         @Override
+        @Pure
         public int compareTo(Version that) {
             int c = compareTokens(this.sequence, that.sequence);
             if (c != 0) return c;
@@ -1237,7 +1246,8 @@ public class ModuleDescriptor
          *          reference that is equal to this module reference
          */
         @Override
-        public boolean equals(Object ob) {
+        @Pure
+        public boolean equals(@Nullable Object ob) {
             if (!(ob instanceof Version))
                 return false;
             return compareTo((Version)ob) == 0;
@@ -2259,6 +2269,7 @@ public class ModuleDescriptor
      *         module descriptor
      */
     @Override
+    @Pure
     public int compareTo(ModuleDescriptor that) {
         if (this == that) return 0;
 
@@ -2647,6 +2658,7 @@ public class ModuleDescriptor
         return h;
     }
 
+    @Pure
     private static <T extends Object & Comparable<? super T>>
     int compare(T obj1, T obj2) {
         if (obj1 != null) {
@@ -2660,6 +2672,7 @@ public class ModuleDescriptor
      * Compares two sets of {@code Comparable} objects.
      */
     @SuppressWarnings("unchecked")
+    @Pure
     private static <T extends Object & Comparable<? super T>>
     int compare(Set<T> s1, Set<T> s2) {
         T[] a1 = (T[]) s1.toArray();

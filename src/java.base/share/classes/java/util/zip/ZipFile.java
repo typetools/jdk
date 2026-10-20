@@ -36,10 +36,10 @@ import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.CFComment;
 import org.checkerframework.framework.qual.DoesNotUnrefineReceiver;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.io.Closeable;
 import java.io.InputStream;
@@ -1090,7 +1090,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
      * This method is used in JarFile, via SharedSecrets, as an optimization
      * when looking up the manifest file.
      */
-    private String getManifestName(boolean onlyIfSignatureRelatedFiles) {
+    private @Nullable String getManifestName(boolean onlyIfSignatureRelatedFiles) {
         synchronized (this) {
             ensureOpen();
             Source zsrc = res.zsrc;
@@ -1132,7 +1132,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
                     return ((ZipFile)jar).getManifestNum();
                 }
                 @Override
-                public String getManifestName(JarFile jar, boolean onlyIfHasSignatureRelatedFiles) {
+                public @Nullable String getManifestName(JarFile jar, boolean onlyIfHasSignatureRelatedFiles) {
                     return ((ZipFile)jar).getManifestName(onlyIfHasSignatureRelatedFiles);
                 }
                 @Override
@@ -1282,7 +1282,7 @@ public @UsesObjectEquals class ZipFile implements ZipConstants, Closeable {
             }
 
             @Pure
-            public boolean equals(Object obj) {
+            public boolean equals(@Nullable Object obj) {
                 if (obj instanceof Key key) {
                     if (key.utf8 != utf8) {
                         return false;

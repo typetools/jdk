@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.dom;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.w3c.dom.DOMStringList;

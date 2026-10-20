@@ -28,6 +28,8 @@
 package javax.xml.crypto;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -61,12 +63,13 @@ public class MarshalException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code MarshalException} with
      * {@code null} as its detail message.
      */
+    @SideEffectFree
     public MarshalException() {
         super();
     }
@@ -77,7 +80,8 @@ public class MarshalException extends Exception {
      *
      * @param message the detail message
      */
-    public MarshalException(String message) {
+    @SideEffectFree
+    public MarshalException(@Nullable String message) {
         super(message);
     }
 
@@ -92,7 +96,8 @@ public class MarshalException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public MarshalException(String message, Throwable cause) {
+    @SideEffectFree
+    public MarshalException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -105,7 +110,8 @@ public class MarshalException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public MarshalException(Throwable cause) {
+    @SideEffectFree
+    public MarshalException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }
@@ -119,6 +125,7 @@ public class MarshalException extends Exception {
      * @return the cause of this {@code MarshalException} or
      *         {@code null} if the cause is nonexistent or unknown.
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return cause;
     }

@@ -26,6 +26,8 @@
 package javax.security.sasl;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.IOException;
 
@@ -50,6 +52,7 @@ public class SaslException extends IOException {
      * Constructs a new instance of {@code SaslException}.
      * The root exception and the detailed message are null.
      */
+    @SideEffectFree
     public SaslException () {
         super();
     }
@@ -61,7 +64,8 @@ public class SaslException extends IOException {
      *
      * @see java.lang.Throwable#getMessage
      */
-    public SaslException (String detail) {
+    @SideEffectFree
+    public SaslException (@Nullable String detail) {
         super(detail);
     }
 
@@ -81,7 +85,8 @@ public class SaslException extends IOException {
      * @see java.lang.Throwable#getMessage
      * @see #getCause
      */
-    public SaslException (String detail, Throwable ex) {
+    @SideEffectFree
+    public SaslException (@Nullable String detail, @Nullable Throwable ex) {
         super(detail);
         if (ex != null) {
             initCause(ex);
@@ -92,6 +97,7 @@ public class SaslException extends IOException {
      * Override Throwable.getCause() to ensure deserialized object from
      * JSR 28 would return same value for getCause() (i.e., _exception).
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return _exception;
     }
@@ -118,6 +124,7 @@ public class SaslException extends IOException {
      * @see java.lang.Throwable#getMessage
      */
     // Override Throwable.toString() to conform to JSR 28
+    @SideEffectFree
     public String toString() {
         String answer = super.toString();
         if (_exception != null && _exception != this) {

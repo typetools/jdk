@@ -640,6 +640,7 @@ public class StandardGlyphVector extends GlyphVector {
         return null;
     }
 
+    @Pure
     public boolean equals(GlyphVector rhs) {
         if (this == rhs) {
             return true;
@@ -1392,6 +1393,7 @@ public class StandardGlyphVector extends GlyphVector {
         }
 
         // used in sgv equality
+        @Pure
         public boolean equals(GlyphTransformInfo rhs) {
             if (rhs == null) {
                 return false;

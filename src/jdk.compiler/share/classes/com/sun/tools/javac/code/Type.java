@@ -25,7 +25,9 @@
 
 package com.sun.tools.javac.code;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -553,7 +555,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
      * Override this method with care. For most Type instances this should behave as ==.
      */
     @Override @DefinedBy(Api.LANGUAGE_MODEL)
-    public boolean equals(Object t) {
+    @Pure
+    public boolean equals(@Nullable Object t) {
         return this == t;
     }
 
@@ -1400,7 +1403,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             return (obj instanceof ArrayType arrayType)
                     && (this == arrayType || elemtype.equals(arrayType.elemtype));
         }

@@ -1015,7 +1015,7 @@ class JapaneseImperialCalendar extends Calendar {
     }
 
     @Override
-    public String getDisplayName(int field, int style, Locale locale) {
+    public @Nullable String getDisplayName(int field, int style, Locale locale) {
         if (!checkDisplayNameParams(field, style, SHORT, NARROW_FORMAT, locale,
                                     ERA_MASK|YEAR_MASK|MONTH_MASK|DAY_OF_WEEK_MASK|AM_PM_MASK)) {
             return null;
@@ -1043,7 +1043,7 @@ class JapaneseImperialCalendar extends Calendar {
     }
 
     @Override
-    public Map<String,Integer> getDisplayNames(int field, int style, Locale locale) {
+    public @Nullable Map<String,Integer> getDisplayNames(int field, int style, Locale locale) {
         if (!checkDisplayNameParams(field, style, ALL_STYLES, NARROW_FORMAT, locale,
                                     ERA_MASK|YEAR_MASK|MONTH_MASK|DAY_OF_WEEK_MASK|AM_PM_MASK)) {
             return null;

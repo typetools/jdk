@@ -54,8 +54,9 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
-// import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 import java.util.*;
 
@@ -145,7 +146,8 @@ final class ProcessEnvironment
             return str;
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof ExternalData
                 && Arrays.equals(getBytes(), ((ExternalData) o).getBytes());
         }
@@ -179,11 +181,13 @@ final class ProcessEnvironment
             return new Variable(new String(bytes, JNU_CHARSET), bytes);
         }
 
+        @Pure
         public int compareTo(Variable variable) {
             return Arrays.compare(getBytes(), variable.getBytes());
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof Variable && super.equals(o);
         }
     }
@@ -212,11 +216,13 @@ final class ProcessEnvironment
             return new Value(new String(bytes, JNU_CHARSET), bytes);
         }
 
+        @Pure
         public int compareTo(Value value) {
             return Arrays.compare(getBytes(), value.getBytes());
         }
 
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof Value && super.equals(o);
         }
     }
@@ -318,7 +324,8 @@ final class ProcessEnvironment
             return e.setValue(Value.valueOf(newValue)).toString();
         }
         public String toString() {return getKey() + "=" + getValue();}
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof StringEntry
                 && e.equals(((StringEntry)o).e);
         }
@@ -338,7 +345,7 @@ final class ProcessEnvironment
                 Iterator<Map.Entry<Variable,Value>> i = s.iterator();
                 @Pure
                 public boolean hasNext() {return i.hasNext();}
-                // // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 public Map.Entry<String,String> next() {
                     return new StringEntry(i.next());
                 }
@@ -364,7 +371,7 @@ final class ProcessEnvironment
         public boolean contains(Object o) { return s.contains(vvEntry(o)); }
         public boolean remove(Object o)   { return s.remove(vvEntry(o)); }
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             return o instanceof StringEntrySet
                 && s.equals(((StringEntrySet) o).s);
         }
@@ -385,7 +392,7 @@ final class ProcessEnvironment
                 Iterator<Value> i = c.iterator();
                 @Pure
                 public boolean hasNext() {return i.hasNext();}
-                // // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {i.remove();}
             };
@@ -397,7 +404,8 @@ final class ProcessEnvironment
         public boolean remove(Object o) {
             return c.remove(Value.valueOfQueryOnly(o));
         }
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return o instanceof StringValues
                 && c.equals(((StringValues)o).c);
         }
@@ -416,7 +424,7 @@ final class ProcessEnvironment
                 Iterator<Variable> i = s.iterator();
                 @Pure
                 public boolean hasNext() {return i.hasNext();}
-                // // @SideEffectsOnly("this")
+                @SideEffectsOnly("this")
                 public String next()     {return i.next().toString();}
                 public void remove()     {       i.remove();}
             };

@@ -4099,6 +4099,7 @@ public class ObjectInputStream
         /**
          * Returns number of handles registered in table.
          */
+        @Pure
         int size() {
             return size;
         }
@@ -4148,6 +4149,7 @@ public class ObjectInputStream
                 return list[index];
             }
 
+            @Pure
             public int size() {
                 return size;
             }

@@ -25,6 +25,7 @@
 
 package java.security;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -59,7 +60,7 @@ public class InvalidParameterException extends IllegalArgumentException {
      * @param msg the detail message.
      */
     @SideEffectFree
-    public InvalidParameterException(String msg) {
+    public InvalidParameterException(@Nullable String msg) {
         super(msg);
     }
 
@@ -82,7 +83,7 @@ public class InvalidParameterException extends IllegalArgumentException {
      * @since  20
      */
     @SideEffectFree
-    public InvalidParameterException(String msg, Throwable cause) {
+    public InvalidParameterException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 
@@ -101,7 +102,7 @@ public class InvalidParameterException extends IllegalArgumentException {
      * @since  20
      */
     @SideEffectFree
-    public InvalidParameterException(Throwable cause) {
+    public InvalidParameterException(@Nullable Throwable cause) {
         super(cause);
     }
 }

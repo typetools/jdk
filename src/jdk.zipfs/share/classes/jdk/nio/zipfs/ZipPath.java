@@ -642,6 +642,7 @@ final class ZipPath implements Path {
     }
 
     @Override
+    @Pure
     public int compareTo(Path other) {
         final ZipPath o = checkPath(other);
         int len1 = this.path.length;

@@ -25,7 +25,9 @@
 
 package java.net;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.IOException;
 
 /**
@@ -58,7 +60,7 @@ public class HttpRetryException extends IOException {
      * @param   code   the HTTP response code from server.
      */
     @SideEffectFree
-    public HttpRetryException(String detail, int code) {
+    public HttpRetryException(@Nullable String detail, int code) {
         super(detail);
         responseCode = code;
     }
@@ -72,7 +74,7 @@ public class HttpRetryException extends IOException {
      * @param   location   the URL to be redirected to
      */
     @SideEffectFree
-    public HttpRetryException(String detail, int code, String location) {
+    public HttpRetryException(@Nullable String detail, int code, String location) {
         super (detail);
         responseCode = code;
         this.location = location;
@@ -93,7 +95,7 @@ public class HttpRetryException extends IOException {
      *
      * @return  The reason string
      */
-    public String getReason() {
+    public @Nullable String getReason() {
         return super.getMessage();
     }
 

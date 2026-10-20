@@ -65,6 +65,7 @@ public non-sealed class IllegalFormatFlagsException extends IllegalFormatExcepti
         return flags;
     }
 
+    @SideEffectFree
     public String getMessage() {
         return "Flags = '" + flags + "'";
     }

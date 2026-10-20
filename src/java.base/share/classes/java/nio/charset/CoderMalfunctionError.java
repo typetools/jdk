@@ -25,6 +25,7 @@
 
 package java.nio.charset;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -50,7 +51,7 @@ public class CoderMalfunctionError
      *         The unexpected exception that was thrown
      */
     @SideEffectFree
-    public CoderMalfunctionError(Exception cause) {
+    public CoderMalfunctionError(@Nullable Exception cause) {
         super(cause);
     }
 

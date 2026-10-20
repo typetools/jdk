@@ -28,6 +28,8 @@
 package javax.xml.crypto.dsig;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -52,12 +54,13 @@ public class XMLSignatureException extends Exception {
      *
      * @serial
      */
-    private Throwable cause;
+    private @Nullable Throwable cause;
 
     /**
      * Constructs a new {@code XMLSignatureException} with
      * {@code null} as its detail message.
      */
+    @SideEffectFree
     public XMLSignatureException() {
         super();
     }
@@ -68,7 +71,8 @@ public class XMLSignatureException extends Exception {
      *
      * @param message the detail message
      */
-    public XMLSignatureException(String message) {
+    @SideEffectFree
+    public XMLSignatureException(@Nullable String message) {
         super(message);
     }
 
@@ -83,7 +87,8 @@ public class XMLSignatureException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public XMLSignatureException(String message, Throwable cause) {
+    @SideEffectFree
+    public XMLSignatureException(@Nullable String message, @Nullable Throwable cause) {
         super(message);
         this.cause = cause;
     }
@@ -98,7 +103,8 @@ public class XMLSignatureException extends Exception {
      * @param cause the cause (A {@code null} value is permitted, and
      *        indicates that the cause is nonexistent or unknown.)
      */
-    public XMLSignatureException(Throwable cause) {
+    @SideEffectFree
+    public XMLSignatureException(@Nullable Throwable cause) {
         super(cause==null ? null : cause.toString());
         this.cause = cause;
     }
@@ -112,6 +118,7 @@ public class XMLSignatureException extends Exception {
      * @return the cause of this {@code XMLSignatureException} or
      *         {@code null} if the cause is nonexistent or unknown.
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return cause;
     }

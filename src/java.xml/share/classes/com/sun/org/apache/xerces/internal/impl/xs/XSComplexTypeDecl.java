@@ -21,6 +21,7 @@
 package com.sun.org.apache.xerces.internal.impl.xs;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xerces.internal.impl.dv.XSSimpleType;
 import com.sun.org.apache.xerces.internal.xs.*;
 import com.sun.org.apache.xerces.internal.impl.xs.models.XSCMValidator;

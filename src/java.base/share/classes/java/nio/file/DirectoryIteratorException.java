@@ -25,15 +25,16 @@
 
 package java.nio.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.framework.qual.AnnotatedFor;
+
 import java.util.ConcurrentModificationException;
 import java.util.Objects;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.InvalidObjectException;
-
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Runtime exception thrown if an I/O error is encountered when iterating over
@@ -71,6 +72,7 @@ public final class DirectoryIteratorException
      *
      * @return  the cause
      */
+    @Pure
     @Override
     public IOException getCause() {
         return (IOException)super.getCause();

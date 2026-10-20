@@ -26,6 +26,7 @@
 package java.security.cert;
 
 import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
@@ -92,7 +93,7 @@ public class CertificateRevokedException extends CertificateException {
      *    typed key or value
      */
     @SideEffectFree
-    @SuppressWarnings("purity.not.sideeffectfree.call") // side effects are only on new objects
+    @SuppressWarnings("purity.call") // side effects are only on new objects
     public CertificateRevokedException(Date revocationDate, CRLReason reason,
         X500Principal authority, Map<String, Extension> extensions) {
         if (revocationDate == null || reason == null || authority == null ||
@@ -179,6 +180,7 @@ public class CertificateRevokedException extends CertificateException {
         return Collections.unmodifiableMap(extensions);
     }
 
+    @SideEffectFree
     @Override
     public String getMessage() {
         return "Certificate has been revoked, reason: "

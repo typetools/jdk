@@ -25,6 +25,7 @@
 
 package java.lang.annotation;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -49,7 +50,7 @@ public class AnnotationFormatError extends Error {
      * @param   message   the detail message.
      */
     @SideEffectFree
-    public AnnotationFormatError(String message) {
+    public AnnotationFormatError(@Nullable String message) {
         super(message);
     }
 
@@ -64,7 +65,7 @@ public class AnnotationFormatError extends Error {
      *     indicates that the cause is nonexistent or unknown.)
      */
     @SideEffectFree
-    public AnnotationFormatError(String message, Throwable cause) {
+    public AnnotationFormatError(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -79,7 +80,7 @@ public class AnnotationFormatError extends Error {
      *     indicates that the cause is nonexistent or unknown.)
      */
     @SideEffectFree
-    public AnnotationFormatError(Throwable cause) {
+    public AnnotationFormatError(@Nullable Throwable cause) {
         super(cause);
     }
 }

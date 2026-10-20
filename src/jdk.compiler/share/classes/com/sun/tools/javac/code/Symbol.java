@@ -30,6 +30,7 @@ import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.checker.signature.qual.CanonicalName;
 import org.checkerframework.checker.signature.qual.Identifier;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
@@ -2587,6 +2588,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         private transient Supplier<JCDiagnostic> diagSupplier;
 
+        @SideEffectFree
         public CompletionFailure(Symbol sym, Supplier<JCDiagnostic> diagSupplier, DeferredCompletionFailureHandler dcfh) {
             this.dcfh = dcfh;
             this.sym = sym;
@@ -2601,6 +2603,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return diag;
         }
 
+        @SideEffectFree
         @Override
         public String getMessage() {
             return getDiagnostic().getMessage(null);

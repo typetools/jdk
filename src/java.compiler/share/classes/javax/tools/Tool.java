@@ -26,13 +26,12 @@
 package javax.tools;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.util.Set;
 import java.io.InputStream;
 import java.io.OutputStream;
 import javax.lang.model.SourceVersion;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Common interface for tools that can be invoked from a program.

@@ -25,11 +25,11 @@
 
 package java.nio.file;
 
-import java.nio.file.attribute.BasicFileAttributes;
-import java.io.IOException;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.nio.file.attribute.BasicFileAttributes;
+import java.io.IOException;
 
 /**
  * A visitor of files. An implementation of this interface is provided to the

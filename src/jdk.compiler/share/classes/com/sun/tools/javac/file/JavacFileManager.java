@@ -25,7 +25,9 @@
 
 package com.sun.tools.javac.file;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -119,12 +121,14 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
     protected enum SortFiles implements Comparator<Path> {
         FORWARD {
             @Override
+            @Pure
             public int compare(Path f1, Path f2) {
                 return f1.getFileName().compareTo(f2.getFileName());
             }
         },
         REVERSE {
             @Override
+            @Pure
             public int compare(Path f1, Path f2) {
                 return f2.getFileName().compareTo(f1.getFileName());
             }
@@ -1097,12 +1101,14 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         }
 
         @Override
+        @Pure
         public int compareTo(PathAndContainer other) {
             return index - other.index;
         }
 
         @Override
-        public boolean equals(Object o) {
+        @Pure
+        public boolean equals(@Nullable Object o) {
             return (o instanceof PathAndContainer pathAndContainer)
                     && path.equals(pathAndContainer.path)
                     && container.equals(pathAndContainer.container)

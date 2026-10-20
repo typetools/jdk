@@ -23,6 +23,7 @@ package com.sun.org.apache.xml.internal.serializer.dom3;
 
 //import org.apache.xerces.dom3.DOMStringList;
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.w3c.dom.DOMStringList;

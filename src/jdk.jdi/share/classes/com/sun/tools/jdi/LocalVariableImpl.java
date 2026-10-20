@@ -91,6 +91,7 @@ public class LocalVariableImpl extends MirrorImpl
         return ((scopeStart.hashCode() << 4) + slot());
     }
 
+    @Pure
     public int compareTo(LocalVariable object) {
         LocalVariableImpl other = (LocalVariableImpl)object;
 

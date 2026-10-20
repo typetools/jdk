@@ -26,6 +26,7 @@
 package javax.tools;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.AnnotatedFor;
 
 import java.io.Writer;
 import java.net.URI;
@@ -33,8 +34,6 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 import javax.annotation.processing.Processor;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
  * Interface to invoke Java programming language compilers from

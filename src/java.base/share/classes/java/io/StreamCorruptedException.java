@@ -28,6 +28,7 @@ package java.io;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
 /**
  * Thrown when control information that was read from an object stream
  * violates internal consistency checks.

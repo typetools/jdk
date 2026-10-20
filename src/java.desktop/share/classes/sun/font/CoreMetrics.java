@@ -87,6 +87,7 @@ public final class CoreMetrics {
         }
     }
 
+    @Pure
     public boolean equals(CoreMetrics rhs) {
         if (rhs != null) {
             if (this == rhs) {

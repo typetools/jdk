@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -50,7 +51,7 @@ public final class WrongThreadException extends RuntimeException {
      * @param s the String that contains a detailed message, can be null
      */
     @SideEffectFree
-    public WrongThreadException(String s) {
+    public WrongThreadException(@Nullable String s) {
         super(s);
     }
 
@@ -61,7 +62,7 @@ public final class WrongThreadException extends RuntimeException {
      * @param  cause the cause, can be null
      */
     @SideEffectFree
-    public WrongThreadException(String message, Throwable cause) {
+    public WrongThreadException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -73,7 +74,7 @@ public final class WrongThreadException extends RuntimeException {
      * @param  cause the cause, can be null
      */
     @SideEffectFree
-    public WrongThreadException(Throwable cause) {
+    public WrongThreadException(@Nullable Throwable cause) {
         super(cause);
     }
 }

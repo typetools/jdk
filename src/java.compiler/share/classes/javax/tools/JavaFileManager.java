@@ -26,6 +26,7 @@
 package javax.tools;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;

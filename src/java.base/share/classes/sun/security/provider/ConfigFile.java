@@ -25,6 +25,8 @@
 
 package sun.security.provider;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -47,8 +49,6 @@ import sun.security.util.PropertyExpander;
 import sun.security.util.ResourcesMgr;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-
-import org.checkerframework.dataflow.qual.Pure;
 
 /**
  * This class represents a default implementation for

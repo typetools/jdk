@@ -26,6 +26,7 @@
 package com.sun.tools.javac.file;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;

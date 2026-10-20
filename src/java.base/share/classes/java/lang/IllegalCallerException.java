@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -49,7 +50,7 @@ public class IllegalCallerException extends RuntimeException {
      * @param s the String that contains a detailed message (can be null)
      */
     @SideEffectFree
-    public IllegalCallerException(String s) {
+    public IllegalCallerException(@Nullable String s) {
         super(s);
     }
 
@@ -61,7 +62,7 @@ public class IllegalCallerException extends RuntimeException {
      * @param  cause the cause (can be null)
      */
     @SideEffectFree
-    public IllegalCallerException(String message, Throwable cause) {
+    public IllegalCallerException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
@@ -73,7 +74,7 @@ public class IllegalCallerException extends RuntimeException {
      * @param  cause the cause (can be null)
      */
     @SideEffectFree
-    public IllegalCallerException(Throwable cause) {
+    public IllegalCallerException(@Nullable Throwable cause) {
         super(cause);
     }
 

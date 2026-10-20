@@ -314,7 +314,8 @@ public final class BaseLocale {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        @Pure
+        public boolean equals(@Nullable Object obj) {
             if (this == obj) {
                 return true;
             }

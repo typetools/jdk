@@ -31,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -223,6 +222,7 @@ public final class DnsName implements Name {
                 (compareTo(obj) == 0));
     }
 
+    @Pure
     public int compareTo(Object obj) {
         Name n = (Name) obj;
         return compareRange(0, size(), n);      // never 0 if sizes differ

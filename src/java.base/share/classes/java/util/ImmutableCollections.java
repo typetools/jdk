@@ -32,6 +32,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.signedness.qual.UnknownSignedness;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
@@ -314,7 +315,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;
             }
@@ -528,6 +529,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
@@ -542,6 +544,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) {
             if (!allowNulls() && o == null) {
                 throw new NullPointerException();
@@ -555,6 +558,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public Object[] toArray() {
             Object[] array = new Object[size];
             for (int i = 0; i < size; i++) {
@@ -628,6 +632,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             Objects.requireNonNull(o);
             if (o.equals(e0)) {
@@ -641,6 +646,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) {
             Objects.requireNonNull(o);
             if (e1 != EMPTY && o.equals(e1)) {
@@ -667,6 +673,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public Object[] toArray() {
             if (e1 == EMPTY) {
                 return new Object[] { e0 };
@@ -738,6 +745,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public Object[] toArray() {
             return Arrays.copyOf(elements, elements.length);
         }
@@ -759,6 +767,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
+        @StaticallyExecutable
         public int indexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
@@ -774,6 +783,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
+        @StaticallyExecutable
         public int lastIndexOf(Object o) {
             if (!allowNulls && o == null) {
                 throw new NullPointerException();
@@ -796,7 +806,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o == this) {
                 return true;
             } else if (!(o instanceof Set)) {
@@ -917,6 +927,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public Object[] toArray() {
             if (e1 == EMPTY) {
                 return new Object[] { e0 };
@@ -1106,6 +1117,7 @@ class ImmutableCollections {
         }
 
         @Override
+        @SideEffectFree
         public Object[] toArray() {
             Object[] array = new Object[size];
             Iterator<E> it = iterator();
@@ -1136,9 +1148,9 @@ class ImmutableCollections {
     // Not a jdk.internal.ValueBased class; disqualified by fields in superclass AbstractMap
     abstract static class AbstractImmutableMap<K,V> extends AbstractMap<K,V> implements Serializable {
         @Override public void clear() { throw uoe(); }
-        @Override public @PolyNull V compute(K key, BiFunction<? super K,? super V,? extends @PolyNull V> rf) { throw uoe(); }
+        @Override public @PolyNull V compute(K key, BiFunction<? super K,? super @Nullable V,? extends @PolyNull V> rf) { throw uoe(); }
         @Override public @PolyNull V computeIfAbsent(K key, Function<? super K,? extends @PolyNull V> mf) { throw uoe(); }
-        @Override public @PolyNull V computeIfPresent(K key, BiFunction<? super K,? super V,? extends @PolyNull V> rf) { throw uoe(); }
+        @Override public @Nullable V computeIfPresent(K key, BiFunction<? super K,? super V,? extends @Nullable V> rf) { throw uoe(); }
         @Override public @PolyNull V merge(K key, @NonNull V value, BiFunction<? super V,? super V,? extends @PolyNull V> rf) { throw uoe(); }
         @Override public V put(K key, V value) { throw uoe(); }
         @Override public void putAll(Map<? extends K,? extends V> m) { throw uoe(); }
@@ -1185,7 +1197,7 @@ class ImmutableCollections {
 
         @Override
         @Pure
-        public V get(Object o) {
+        public @Nullable V get(Object o) {
             return o.equals(k0) ? v0 : null; // implicit nullcheck of o
         }
 
@@ -1311,7 +1323,7 @@ class ImmutableCollections {
         @Override
         @SuppressWarnings("unchecked")
         @Pure
-        public V get(Object o) {
+        public @Nullable V get(Object o) {
             if (size == 0) {
                 Objects.requireNonNull(o);
                 return null;

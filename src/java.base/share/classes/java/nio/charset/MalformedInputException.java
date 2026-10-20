@@ -69,6 +69,7 @@ public class MalformedInputException
      * Returns the message.
      * @return the message
      */
+    @SideEffectFree
     public String getMessage() {
         return "Input length = " + inputLength;
     }

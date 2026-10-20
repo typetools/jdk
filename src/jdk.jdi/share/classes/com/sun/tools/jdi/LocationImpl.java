@@ -86,6 +86,7 @@ public class LocationImpl extends MirrorImpl implements Location {
         return method().hashCode() + (int)codeIndex();
     }
 
+    @Pure
     public int compareTo(Location other) {
         int rc = method().compareTo(other.method());
         if (rc == 0) {

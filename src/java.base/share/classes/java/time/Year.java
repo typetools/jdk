@@ -1027,6 +1027,7 @@ public final class Year
      * @return the comparator value, negative if less, positive if greater
      */
     @Override
+    @Pure
     public int compareTo(Year other) {
         return year - other.year;
     }
@@ -1037,6 +1038,7 @@ public final class Year
      * @param other  the other year to compare to, not null
      * @return true if this is after the specified year
      */
+    @Pure
     public boolean isAfter(Year other) {
         return year > other.year;
     }
@@ -1047,6 +1049,7 @@ public final class Year
      * @param other  the other year to compare to, not null
      * @return true if this point is before the specified year
      */
+    @Pure
     public boolean isBefore(Year other) {
         return year < other.year;
     }

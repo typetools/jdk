@@ -121,6 +121,7 @@ public class FileSystemException
     /**
      * Returns the detail message string.
      */
+    @SideEffectFree
     @Override
     public @Nullable String getMessage() {
         if (file == null && other == null)

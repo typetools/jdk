@@ -26,6 +26,8 @@
 package javax.management;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * Represents runtime exceptions thrown by MBean methods in
@@ -51,6 +53,7 @@ public class RuntimeMBeanException extends JMRuntimeException   {
      *
      * @param e the wrapped exception.
      */
+    @SideEffectFree
     public RuntimeMBeanException(java.lang.RuntimeException e) {
         super() ;
         runtimeException = e ;
@@ -63,7 +66,8 @@ public class RuntimeMBeanException extends JMRuntimeException   {
      * @param e the wrapped exception.
      * @param message the detail message.
      */
-    public RuntimeMBeanException(java.lang.RuntimeException e, String message) {
+    @SideEffectFree
+    public RuntimeMBeanException(java.lang.RuntimeException e, @Nullable String message) {
         super(message) ;
         runtimeException = e ;
     }
@@ -82,6 +86,7 @@ public class RuntimeMBeanException extends JMRuntimeException   {
      *
      * @return the wrapped {@link RuntimeException}.
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return runtimeException;
     }

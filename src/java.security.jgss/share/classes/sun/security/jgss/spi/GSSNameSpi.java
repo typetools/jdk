@@ -56,6 +56,7 @@ public interface GSSNameSpi {
      * @exception GSSException with major codes of BAD_NAMETYPE,
      *    BAD_NAME, FAILURE
      */
+    @Pure
     boolean equals(GSSNameSpi name) throws GSSException;
 
     /**

@@ -22,6 +22,8 @@
 package com.sun.org.apache.xerces.internal.xni;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * This exception is the base exception of all XNI exceptions. It
@@ -47,7 +49,7 @@ public class XNIException
     //
 
     /** The wrapped exception. */
-    private Exception fException;
+    private @Nullable Exception fException;
 
     //
     // Constructors
@@ -58,7 +60,8 @@ public class XNIException
      *
      * @param message The exception message.
      */
-    public XNIException(String message) {
+    @SideEffectFree
+    public XNIException(@Nullable String message) {
         super(message);
     } // <init>(String)
 
@@ -67,6 +70,7 @@ public class XNIException
      *
      * @param exception The wrapped exception.
      */
+    @SideEffectFree
     public XNIException(Exception exception) {
         super(exception.getMessage());
         fException = exception;
@@ -78,7 +82,8 @@ public class XNIException
      * @param message The exception message.
      * @param exception The wrapped exception.
      */
-    public XNIException(String message, Exception exception) {
+    @SideEffectFree
+    public XNIException(@Nullable String message, @Nullable Exception exception) {
         super(message);
         fException = exception;
     } // <init>(Exception,String)
@@ -88,10 +93,11 @@ public class XNIException
     //
 
     /** Returns the wrapped exception. */
-    public Exception getException() {
+    public @Nullable Exception getException() {
         return fException;
     } // getException():Exception
 
+    @Pure
     public @Nullable Throwable getCause() {
        return fException;
     }

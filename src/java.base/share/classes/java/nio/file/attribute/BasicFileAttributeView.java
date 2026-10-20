@@ -25,10 +25,10 @@
 
 package java.nio.file.attribute;
 
-import java.io.IOException;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
+
+import java.io.IOException;
 
 /**
  * A file attribute view that provides a view of a <em>basic set</em> of file

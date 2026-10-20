@@ -1455,6 +1455,7 @@ public class XMLGregorianCalendarImpl
      * @throws NullPointerException if <code>lhs</code> or <code>rhs</code>
      * parameters are null.
      */
+    @Pure
     public int compare(XMLGregorianCalendar rhs) {
 
         XMLGregorianCalendar lhs = this;

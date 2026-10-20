@@ -26,6 +26,8 @@
 package java.awt.print;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -63,6 +65,7 @@ public class PrinterIOException extends PrinterException {
      * {@link IOException}.
      * @param exception the specified {@code IOException}
      */
+    @SideEffectFree
     public PrinterIOException(IOException exception) {
         initCause(null);  // Disallow subsequent initCause
         mException = exception;
@@ -91,6 +94,7 @@ public class PrinterIOException extends PrinterException {
      * @return  the cause of this exception.
      * @since   1.4
      */
+    @Pure
     public @Nullable Throwable getCause() {
         return mException;
     }

@@ -25,6 +25,7 @@
 
 package java.lang.invoke;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -61,7 +62,7 @@ public class WrongMethodTypeException extends RuntimeException {
      * @param s the detail message.
      */
     @SideEffectFree
-    public WrongMethodTypeException(String s) {
+    public WrongMethodTypeException(@Nullable String s) {
         super(s);
     }
 
@@ -75,7 +76,7 @@ public class WrongMethodTypeException extends RuntimeException {
     //FIXME: make this public in MR1
     /*non-public*/
     @SideEffectFree
-    WrongMethodTypeException(String s, Throwable cause) {
+    WrongMethodTypeException(@Nullable String s, @Nullable Throwable cause) {
         super(s, cause);
     }
 
@@ -88,7 +89,7 @@ public class WrongMethodTypeException extends RuntimeException {
     //FIXME: make this public in MR1
     /*non-public*/
     @SideEffectFree
-    WrongMethodTypeException(Throwable cause) {
+    WrongMethodTypeException(@Nullable Throwable cause) {
         super(cause);
     }
 }

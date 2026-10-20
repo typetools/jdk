@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.doclets.toolkit;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.regex.Pattern;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;

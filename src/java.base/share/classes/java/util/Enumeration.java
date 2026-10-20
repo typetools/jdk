@@ -26,6 +26,7 @@
 package java.util;
 
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nonempty.qual.EnsuresNonEmptyIf;
 import org.checkerframework.checker.nonempty.qual.NonEmpty;
 import org.checkerframework.dataflow.qual.Pure;
@@ -128,7 +129,7 @@ public interface Enumeration<E> {
      *
      * @since 9
      */
-    default Iterator<E> asIterator() {
+    default @Unmodifiable Iterator<E> asIterator() {
         return new Iterator<>() {
             @Pure
             @EnsuresNonEmptyIf(result = true, expression = "this")

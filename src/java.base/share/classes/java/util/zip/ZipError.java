@@ -25,6 +25,7 @@
 
 package java.util.zip;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
@@ -42,7 +43,7 @@ public class ZipError extends InternalError {
      * @param s the {@code String} containing a detail message
      */
     @SideEffectFree
-    public ZipError(String s) {
+    public ZipError(@Nullable String s) {
         super(s);
     }
 }

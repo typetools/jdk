@@ -35,6 +35,7 @@
 package com.sun.jndi.toolkit.dir;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import javax.naming.*;
 import javax.naming.directory.*;
 

@@ -21,6 +21,7 @@
 package com.sun.org.apache.xpath.internal;
 
 import org.checkerframework.dataflow.qual.Pure;
+
 import com.sun.org.apache.xalan.internal.res.XSLMessages;
 import com.sun.org.apache.xml.internal.utils.DOM2Helper;
 import com.sun.org.apache.xpath.internal.axes.ContextNodeList;
