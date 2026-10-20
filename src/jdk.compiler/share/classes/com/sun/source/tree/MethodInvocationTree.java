@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.util.List;
 
 /**
@@ -54,6 +56,7 @@ public interface MethodInvocationTree extends ExpressionTree {
      * Returns the expression identifying the method to be invoked.
      * @return the method selection expression
      */
+    @Pure
     ExpressionTree getMethodSelect();
 
     /**

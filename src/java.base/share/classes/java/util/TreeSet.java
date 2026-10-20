@@ -150,6 +150,7 @@ public @SeqUngrowable class TreeSet<E> extends AbstractSet<E>
      * integers), the {@code add} call will throw a
      * {@code ClassCastException}.
      */
+    @SideEffectFree
     public @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod TreeSet() {
         this(new TreeMap<>());
     }
@@ -167,6 +168,7 @@ public @SeqUngrowable class TreeSet<E> extends AbstractSet<E>
      *        If {@code null}, the {@linkplain Comparable natural
      *        ordering} of the elements will be used.
      */
+    @SideEffectFree
     public @Growable @Shrinkable @Replaceable @SeqUngrowable @IteratorPolyMod TreeSet(@Nullable Comparator<? super E> comparator) {
         this(new TreeMap<>(comparator));
     }

@@ -33,6 +33,8 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -126,6 +128,7 @@ public class LineNumberReader extends BufferedReader {
      *
      * @see #setLineNumber
      */
+    @Pure
     public @NonNegative int getLineNumber(@GuardSatisfied LineNumberReader this) {
         return lineNumber;
     }
@@ -255,6 +258,7 @@ public class LineNumberReader extends BufferedReader {
      * @throws  IOException
      *          If an I/O error occurs
      */
+    @SideEffectsOnly("this")
     public @Nullable String readLine(@GuardSatisfied LineNumberReader this) throws IOException {
         synchronized (lock) {
             boolean[] term = new boolean[1];

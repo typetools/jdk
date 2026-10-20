@@ -26,6 +26,7 @@
 package javax.lang.model.element;
 
 import org.checkerframework.checker.signature.qual.CanonicalNameOrEmpty;
+import org.checkerframework.dataflow.qual.Pure;
 
 import jdk.internal.javac.PreviewFeature;
 
@@ -169,6 +170,7 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
      * @jls 6.7 Fully Qualified Names and Canonical Names
      * @jls 7.3 Compilation Units
      */
+    @Pure
     @CanonicalNameOrEmpty Name getQualifiedName();
 
     /**

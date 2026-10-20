@@ -25,6 +25,8 @@
 
 package javax.lang.model.util;
 
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -145,6 +147,7 @@ public class ElementFilter {
      * {@return a list of methods in {@code elements}}
      * @param elements the elements to filter
      */
+    @SideEffectFree
     public static List<ExecutableElement>
             methodsIn(Iterable<? extends Element> elements) {
         return listFilter(elements, METHOD_KIND, ExecutableElement.class);

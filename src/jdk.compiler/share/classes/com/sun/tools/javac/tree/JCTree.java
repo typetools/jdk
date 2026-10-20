@@ -25,6 +25,8 @@
 
 package com.sun.tools.javac.tree;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
@@ -1822,6 +1824,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             return typeargs;
         }
         @DefinedBy(Api.COMPILER_TREE)
+        @Pure
         public JCExpression getMethodSelect() { return meth; }
         @DefinedBy(Api.COMPILER_TREE)
         public List<JCExpression> getArguments() {

@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import org.checkerframework.dataflow.qual.Pure;
+
 /**
  * A tree node for an array access expression.
  *
@@ -44,6 +46,7 @@ public interface ArrayAccessTree extends ExpressionTree {
      * Returns the expression for the array being accessed.
      * @return the array
      */
+    @Pure
     ExpressionTree getExpression();
 
     /**
